@@ -1,0 +1,179 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Carte 2 - ESA Manager{% endblock %}
+
+{% block extra_css %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #map { 
+        height: 85vh; 
+        width: 100%; 
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ================================================================ -->
+<!-- 🗺️ CARTE 2 - À PERSONNALISER -->
+<!-- ================================================================ -->
+
+<div class="row mb-3">
+    <div class="col">
+        <h2>
+            <i class="bi bi-geo-alt"></i> Carte 2
+            <span class="badge bg-secondary">{{ total_eleves }} élément(s)</span>
+        </h2>
+        <p class="text-muted">
+            Carte interactive personnalisable
+        </p>
+    </div>
+</div>
+
+<!-- Carte -->
+<div id="map"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+// ================================================================
+// 🗺️ INITIALISATION DE LA CARTE
+// ================================================================
+
+// Créer la carte centrée sur Marseille
+const map = L.map('map').setView([43.2965, 5.3698], 12);
+
+// Ajouter le fond de carte OpenStreetMap
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19
+}).addTo(map);
+
+// ================================================================
+// 📊 DONNÉES (Passées depuis Django)
+// ================================================================
+
+// Les données sont accessibles via le contexte Django
+// Exemple : {{ eleves|safe }} pour passer des objets Python en JSON
+
+// Pour l'instant, on utilise une API pour récupérer les données
+fetch('{% url "core:api_eleves" %}')
+    .then(response => response.json())
+    .then(data => {
+        console.log('Données reçues:', data);
+        
+        // Ajouter les marqueurs
+        data.eleves.forEach(eleve => {
+            if (eleve.latitude && eleve.longitude) {
+                const marker = L.circleMarker([eleve.latitude, eleve.longitude], {
+                    radius: 8,
+                    fillColor: getColorByStatut(eleve.statut),
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+                
+                marker.bindPopup(`
+                    <div style="font-family: Arial;">
+                        <h6>${eleve.prenom} ${eleve.nom}</h6>
+                        <p class="mb-1"><strong>Classe:</strong> ${eleve.classe || 'Non défini'}</p>
+                        <p class="mb-1"><strong>Statut:</strong> ${eleve.statut}</p>
+                        <p class="mb-0"><strong>Arrondissement:</strong> ${eleve.arrondissement || '-'}</p>
+                    </div>
+                `);
+            }
+        });
+    })
+    .catch(error => console.error('Erreur:', error));
+
+// ================================================================
+// 🎨 FONCTIONS UTILITAIRES
+// ================================================================
+
+function getColorByStatut(statut) {
+    switch(statut) {
+        case 'accompagne':
+            return '#28a745';  // Vert
+        case 'a_accompagner':
+            return '#dc3545';  // Rouge
+        case 'en_attente':
+            return '#ffc107';  // Jaune
+        default:
+            return '#6c757d';  // Gris
+    }
+}
+
+// ================================================================
+// 📝 NOTES D'APPRENTISSAGE
+// ================================================================
+
+/*
+🎓 INTÉGRATION DJANGO + LEAFLET
+
+1. DONNÉES DEPUIS DJANGO :
+   Méthode 1 : API JSON (utilisée ici)
+   fetch('{% url "core:api_eleves" %}')
+   
+   Méthode 2 : Contexte Django direct
+   const eleves = {{ eleves_json|safe }};
+   (Nécessite json.dumps() dans la vue)
+
+2. URLS DJANGO EN JAVASCRIPT :
+   {% url 'core:api_eleves' %} : Génère l'URL
+   Avantage : URLs dynamiques !
+
+3. CSRF TOKEN (pour POST/PUT/DELETE) :
+   const csrftoken = '{{ csrf_token }}';
+   fetch(url, {
+       method: 'POST',
+       headers: {'X-CSRFToken': csrftoken}
+   })
+
+4. LEAFLET + DJANGO :
+   - Très bien intégrés
+   - Utilisez fetch() pour charger les données
+   - Créez des API JSON dans views.py
+
+📚 Pour aller plus loin :
+- Leaflet : https://leafletjs.com/
+- Fetch API : https://developer.mozilla.org/fr/docs/Web/API/Fetch_API
+*/
+</script>
+{% endblock %}
+
+<!-- 
+🎓 NOTES - PERSONNALISATION DE CETTE CARTE
+
+Cette carte est un exemple de base. Voici comment la personnaliser :
+
+1. CHANGER LES DONNÉES :
+   - Modifier l'URL fetch() pour utiliser une autre API
+   - Filtrer les données côté serveur (dans views.py)
+
+2. AJOUTER DES FILTRES :
+   - Cases à cocher par arrondissement
+   - Sélecteur de statut
+   - Recherche par nom
+
+3. STYLES PERSONNALISÉS :
+   - Changer les couleurs des marqueurs
+   - Utiliser des icônes personnalisées
+   - Ajouter des clusters pour grouper les marqueurs proches
+
+4. INTERACTIONS :
+   - Click sur marqueur → Ouvrir une modal
+   - Tracer des zones
+   - Mesurer des distances
+
+Exemple de modification rapide :
+Pour afficher uniquement les élèves à accompagner :
+dans views.py (carte_autre) :
+    eleves = Eleve.objects.filter(statut='a_accompagner', ...)
+-->

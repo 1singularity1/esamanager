@@ -1,0 +1,24 @@
+# 📦 DÉPENDANCES PYTHON - ESA Manager
+# 
+# Installation : pip install -r requirements.txt
+
+# Django - Framework web
+Django>=5.0,<6.0
+
+# Pillow - Traitement d'images (si besoin upload photos)
+Pillow>=10.0
+
+# Django REST Framework - Pour créer des API (optionnel pour l'instant)
+# djangorestframework>=3.14
+
+# Python Decouple - Variables d'environnement (production)
+# python-decouple>=3.8
+
+# Gunicorn - Serveur WSGI pour production
+# gunicorn>=21.0
+
+# PostgreSQL adapter (si vous passez de SQLite à PostgreSQL)
+# psycopg2-binary>=2.9
+
+# Excel export (si besoin)
+# openpyxl>=3.1

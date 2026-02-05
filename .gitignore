@@ -1,0 +1,157 @@
+# 🎓 .GITIGNORE - Fichiers à ne pas commiter sur Git
+
+# ============================================================================
+# 🐍 PYTHON
+# ============================================================================
+
+# Environnement virtuel
+venv/
+env/
+ENV/
+.venv/
+
+# Bytecode Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ============================================================================
+# 🗄️ DJANGO
+# ============================================================================
+
+# Base de données SQLite
+*.sqlite3
+db.sqlite3
+
+# Fichiers de migration (à commenter si vous voulez les versionner)
+# */migrations/*.py
+# !*/migrations/__init__.py
+
+# Fichiers statiques collectés
+/staticfiles/
+/static_root/
+
+# Fichiers média (uploads)
+/media/
+
+# Logs Django
+*.log
+
+# Variables d'environnement
+.env
+.env.local
+.env.*.local
+
+# ============================================================================
+# 💻 ÉDITEURS & IDE
+# ============================================================================
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ============================================================================
+# 🖥️ SYSTÈME
+# ============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ============================================================================
+# 📦 AUTRES
+# ============================================================================
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+
+# Pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# ============================================================================
+# 🎓 NOTES
+# ============================================================================
+
+# Ce fichier indique à Git quels fichiers NE PAS versionner.
+# 
+# Pourquoi ?
+# - Fichiers sensibles (.env avec mots de passe)
+# - Fichiers générés automatiquement (migrations, cache)
+# - Fichiers spécifiques à votre machine (venv, .vscode)
+# 
+# Usage :
+# 1. Créer ce fichier à la racine du projet
+# 2. Git ignorera automatiquement ces fichiers
+# 3. Modifier selon vos besoins
+#
+# Pour forcer l'ajout d'un fichier ignoré :
+# git add -f fichier.txt
