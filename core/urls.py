@@ -40,7 +40,7 @@ urlpatterns = [
     
     # URL : /carte/autre/
     # Vue : views.carte_autre
-    path('carte/autre/', views.carte_autre, name='carte_autre'),
+    path('carte/enattente/', views.carte_enattente, name='carte_enattente'),
     
     # ----------------------------------------------------------------
     # 📊 API JSON (pour alimenter les cartes JavaScript)

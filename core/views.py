@@ -89,18 +89,12 @@ def carte_binomes(request):
 
 
 # ============================================================================
-# 🗺️ CARTE 2 (À DÉFINIR)
+# 🗺️ CARTE des elèves et bénévoles en attente
 # ============================================================================
 
-def carte_autre(request):
+def carte_enattente(request):
     """
-    Vue pour votre 2ème carte (à personnaliser).
-    
-    Exemples d'utilisations possibles :
-    - Carte des élèves non accompagnés
-    - Carte des bénévoles disponibles
-    - Carte par arrondissement
-    - etc.
+    - Carte des élèves non accompagnés et des bénévoles disponibles
     """
     
     # Exemple : carte des élèves à accompagner
@@ -116,7 +110,7 @@ def carte_autre(request):
         'total_eleves': eleves_a_accompagner.count(),
     }
     
-    return render(request, 'core/carte_autre.html', context)
+    return render(request, 'core/carte_enattente.html', context)
 
 
 # ============================================================================
