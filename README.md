@@ -1,9 +1,5 @@
 # 🎓 ESA Manager - Projet Django
 
-Chaque fichier est **commenté ligne par ligne** pour que vous compreniez TOUT.
-
----
-
 ## 🚀 **Installation rapide (5 minutes)**
 
 ### **1. Installer Django**
