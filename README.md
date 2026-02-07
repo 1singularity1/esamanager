@@ -280,14 +280,3 @@ gunicorn esa_manager.wsgi:application
 - [ ] Super-utilisateur créé
 - [ ] Serveur lancé et page accessible
 
----
-
-## 🎉 **Bon apprentissage !**
-
-N'hésitez pas à :
-- Modifier le code
-- Casser des choses (c'est comme ça qu'on apprend !)
-- Lire les commentaires dans chaque fichier
-- Tester les commandes Django
-
-**Chaque erreur est une opportunité d'apprentissage !** 🚀
