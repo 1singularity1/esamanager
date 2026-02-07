@@ -8,121 +8,327 @@ Ici, on personnalise comment nos modèles apparaissent dans l'admin.
 """
 
 from django.contrib import admin
-from .models import Eleve, Benevole, Binome
+from .models import Matiere, Eleve, Benevole, Binome
 
 
 # ============================================================================
 # 👨‍🎓 ADMINISTRATION DES ÉLÈVES
 # ============================================================================
 
+# ============================================================================
+# 📚 ADMIN MATIÈRES
+# ============================================================================
+
+@admin.register(Matiere)
+class MatiereAdmin(admin.ModelAdmin):
+    """Configuration de l'affichage des matières dans l'admin"""
+    
+    list_display = ['nom', 'ordre', 'actif']
+    list_editable = ['ordre', 'actif']
+    list_filter = ['actif']
+    search_fields = ['nom']
+    ordering = ['ordre', 'nom']
+
+
+# ============================================================================
+# 👨‍🎓 ADMIN ÉLÈVES
+# ============================================================================
+
 @admin.register(Eleve)
 class EleveAdmin(admin.ModelAdmin):
-    """
-    Configuration de l'affichage des élèves dans l'admin.
+    """Configuration de l'affichage des élèves dans l'admin"""
     
-    Décorateur @admin.register(Eleve) = équivalent à :
-    admin.site.register(Eleve, EleveAdmin)
-    """
-    
-    # ----------------------------------------------------------------
+    # ========================================================================
     # 📋 LISTE DES ÉLÈVES
-    # ----------------------------------------------------------------
+    # ========================================================================
     
-    # Colonnes affichées dans la liste
     list_display = [
         'prenom',
         'nom',
         'classe',
-        'arrondissement',
+        'etablissement',
         'statut',
+        'afficher_matieres',
+        'telephone_parent',
+        'arrondissement',
         'est_geolocalisé',
         'date_creation',
     ]
     
-    # Colonnes avec liens cliquables (vers la page de détail)
     list_display_links = ['prenom', 'nom']
     
-    # Filtres latéraux (à droite)
     list_filter = [
         'statut',
         'classe',
         'arrondissement',
+        'matieres_souhaitees',  # Filtre par matière
         'date_creation',
     ]
     
-    # Barre de recherche
     search_fields = [
         'nom',
         'prenom',
+        'nom_parent',
+        'prenom_parent',
         'adresse',
+        'etablissement',
+        'telephone',
+        'telephone_parent',
     ]
     
-    # Champs modifiables directement dans la liste
-    # list_editable = ['statut']  # Décommenter si besoin
+    # Widget pour sélection multiple des matières
+    filter_horizontal = ('matieres_souhaitees',)
     
-    # Nombre d'éléments par page
     list_per_page = 50
     
-    # ----------------------------------------------------------------
-    # 📝 FORMULAIRE DE DÉTAIL
-    # ----------------------------------------------------------------
+    # ========================================================================
+    # 📝 FORMULAIRE D'ÉDITION
+    # ========================================================================
     
-    # Champs en lecture seule
-    readonly_fields = [
-        'date_creation',
-        'date_modification',
-        'est_geolocalisé',
-    ]
+    readonly_fields = ['date_creation', 'date_modification', 'est_geolocalisé']
     
-    # Organisation des champs par sections
     fieldsets = (
-        ('📝 Informations personnelles', {
-            'fields': ('nom', 'prenom')
+        ('👤 Informations de l\'élève', {
+            'fields': (
+                ('nom', 'prenom'),
+                'telephone',
+            )
         }),
+        
+        ('👨‍👩‍👧‍👦 Informations des parents', {
+            'fields': (
+                ('nom_parent', 'prenom_parent'),
+                'telephone_parent',
+            ),
+            'description': 'Coordonnées des parents ou tuteurs légaux',
+        }),
+        
         ('🏫 Scolarité', {
-            'fields': ('classe',)
+            'fields': (
+                'classe',
+                'etablissement',
+                'matieres_souhaitees',  # Widget de sélection multiple
+            ),
         }),
+        
         ('📍 Localisation', {
             'fields': (
                 'adresse',
                 'arrondissement',
-                ('latitude', 'longitude'),  # Sur la même ligne
+                ('latitude', 'longitude'),
             ),
-            'description': 'Les coordonnées GPS sont utilisées pour la carte interactive.',
+            'classes': ('collapse',),
+            'description': 'Coordonnées GPS pour la carte interactive',
         }),
+        
         ('📊 Statut', {
-            'fields': ('statut',)
+            'fields': (
+                'statut',
+            ),
         }),
+        
+        ('📝 Remarques', {
+            'fields': (
+                'informations_complementaires',
+            ),
+            'classes': ('collapse',),
+        }),
+        
         ('⏰ Métadonnées', {
             'fields': (
                 'date_creation',
                 'date_modification',
+                'est_geolocalisé',
             ),
-            'classes': ('collapse',),  # Section repliable
+            'classes': ('collapse',),
         }),
     )
     
-    # ----------------------------------------------------------------
-    # 🎨 APPARENCE
-    # ----------------------------------------------------------------
+    # ========================================================================
+    # 🎨 MÉTHODES PERSONNALISÉES
+    # ========================================================================
     
-    # Icône dans le menu (si vous utilisez django-admin-interface)
-    # icon_name = 'school'
+    def afficher_matieres(self, obj):
+        """Affiche les matières dans la liste"""
+        matieres = obj.matieres_souhaitees.all()
+        if matieres:
+            return ", ".join([m.nom for m in matieres[:3]])  # Max 3 pour ne pas surcharger
+        return "-"
+    afficher_matieres.short_description = "Matières"
     
-    # Actions personnalisées
-    actions = ['marquer_comme_accompagne', 'marquer_comme_a_accompagner']
+    # ========================================================================
+    # ⚡ ACTIONS RAPIDES
+    # ========================================================================
     
-    def marquer_comme_accompagne(self, request, queryset):
-        """Action : marquer les élèves sélectionnés comme accompagnés."""
-        count = queryset.update(statut='accompagne')
-        self.message_user(request, f'{count} élève(s) marqué(s) comme accompagné(s).')
-    marquer_comme_accompagne.short_description = "✅ Marquer comme accompagné"
+    actions = ['marquer_accompagne', 'marquer_a_accompagner', 'exporter_csv']
     
-    def marquer_comme_a_accompagner(self, request, queryset):
-        """Action : marquer les élèves sélectionnés comme à accompagner."""
-        count = queryset.update(statut='a_accompagner')
-        self.message_user(request, f'{count} élève(s) marqué(s) comme à accompagner.')
-    marquer_comme_a_accompagner.short_description = "⏳ Marquer comme à accompagner"
+    def marquer_accompagne(self, request, queryset):
+        """Marque les élèves sélectionnés comme accompagnés"""
+        updated = queryset.update(statut='accompagne')
+        self.message_user(request, f'{updated} élève(s) marqué(s) comme accompagné(s).')
+    marquer_accompagne.short_description = "✅ Marquer comme accompagné"
+    
+    def marquer_a_accompagner(self, request, queryset):
+        """Marque les élèves sélectionnés comme à accompagner"""
+        updated = queryset.update(statut='a_accompagner')
+        self.message_user(request, f'{updated} élève(s) marqué(s) comme à accompagner.')
+    marquer_a_accompagner.short_description = "⏳ Marquer comme à accompagner"
+    
+    def exporter_csv(self, request, queryset):
+        """Exporte les élèves sélectionnés en CSV"""
+        import csv
+        from django.http import HttpResponse
+        
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="eleves_export.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow([
+            'Nom', 'Prénom', 'Téléphone élève',
+            'Nom parent', 'Prénom parent', 'Téléphone parent',
+            'Classe', 'Établissement', 'Matières souhaitées',
+            'Adresse', 'Arrondissement', 'Statut',
+            'Informations complémentaires'
+        ])
+        
+        for eleve in queryset:
+            writer.writerow([
+                eleve.nom,
+                eleve.prenom,
+                eleve.telephone,
+                eleve.nom_parent,
+                eleve.prenom_parent,
+                eleve.telephone_parent,
+                eleve.classe,
+                eleve.etablissement,
+                eleve.get_matieres_str(),  # Convertit les matières en chaîne
+                eleve.adresse,
+                eleve.arrondissement,
+                eleve.get_statut_display(),
+                eleve.informations_complementaires,
+            ])
+        
+        return response
+    exporter_csv.short_description = "📥 Exporter en CSV"
+
+
+    # ========================================================================
+    # 📝 FORMULAIRE D'ÉDITION
+    # ========================================================================
+    
+    readonly_fields = ['date_creation', 'date_modification', 'est_geolocalisé']
+    
+    fieldsets = (
+        ('👤 Informations de l\'élève', {
+            'fields': (
+                ('nom', 'prenom'),
+                'telephone',
+            )
+        }),
+        
+        ('👨‍👩‍👧‍👦 Informations des parents', {
+            'fields': (
+                ('nom_parent', 'prenom_parent'),
+                'telephone_parent',
+            ),
+            'description': 'Coordonnées des parents ou tuteurs légaux',
+        }),
+        
+        ('🏫 Scolarité', {
+            'fields': (
+                'classe',
+                'etablissement',
+                'matieres_souhaitees',
+            ),
+        }),
+        
+        ('📍 Localisation', {
+            'fields': (
+                'adresse',
+                'arrondissement',
+                ('latitude', 'longitude'),
+            ),
+            'classes': ('collapse',),
+            'description': 'Coordonnées GPS pour la carte interactive',
+        }),
+        
+        ('📊 Statut', {
+            'fields': (
+                'statut',
+            ),
+        }),
+        
+        ('📝 Remarques', {
+            'fields': (
+                'informations_complementaires',
+            ),
+            'classes': ('collapse',),
+        }),
+        
+        ('⏰ Métadonnées', {
+            'fields': (
+                'date_creation',
+                'date_modification',
+                'est_geolocalisé',
+            ),
+            'classes': ('collapse',),
+        }),
+    )
+    
+    # ========================================================================
+    # ⚡ ACTIONS RAPIDES
+    # ========================================================================
+    
+    actions = ['marquer_accompagne', 'marquer_a_accompagner', 'exporter_csv']
+    
+    def marquer_accompagne(self, request, queryset):
+        """Marque les élèves sélectionnés comme accompagnés"""
+        updated = queryset.update(statut='accompagne')
+        self.message_user(request, f'{updated} élève(s) marqué(s) comme accompagné(s).')
+    marquer_accompagne.short_description = "✅ Marquer comme accompagné"
+    
+    def marquer_a_accompagner(self, request, queryset):
+        """Marque les élèves sélectionnés comme à accompagner"""
+        updated = queryset.update(statut='a_accompagner')
+        self.message_user(request, f'{updated} élève(s) marqué(s) comme à accompagner.')
+    marquer_a_accompagner.short_description = "⏳ Marquer comme à accompagner"
+    
+    def exporter_csv(self, request, queryset):
+        """Exporte les élèves sélectionnés en CSV"""
+        import csv
+        from django.http import HttpResponse
+        
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="eleves_export.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow([
+            'Nom', 'Prénom', 'Téléphone élève',
+            'Nom parent', 'Prénom parent', 'Téléphone parent',
+            'Classe', 'Établissement', 'Matières souhaitées',
+            'Adresse', 'Arrondissement', 'Statut',
+            'Informations complémentaires'
+        ])
+        
+        for eleve in queryset:
+            writer.writerow([
+                eleve.nom,
+                eleve.prenom,
+                eleve.telephone,
+                eleve.nom_parent,
+                eleve.prenom_parent,
+                eleve.telephone_parent,
+                eleve.classe,
+                eleve.etablissement,
+                eleve.matieres_souhaitees,
+                eleve.adresse,
+                eleve.arrondissement,
+                eleve.get_statut_display(),
+                eleve.informations_complementaires,
+            ])
+        
+        return response
+    exporter_csv.short_description = "📥 Exporter en CSV"
 
 
 # ============================================================================

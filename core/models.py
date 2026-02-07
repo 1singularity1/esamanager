@@ -15,21 +15,105 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 # 👨‍🎓 MODÈLE ÉLÈVE
 # ============================================================================
 
-class Eleve(models.Model):
+"""
+🎓 MODELS.PY - Modèle Eleve mis à jour
+
+Modifications apportées :
+1. Ajout des CLASSE_CHOICES pour standardiser les classes
+2. Ajout des champs pour les parents (nom, prénom, téléphone)
+3. Ajout du téléphone de l'élève
+4. Ajout de l'établissement scolaire
+5. Ajout des matières souhaitées
+6. Ajout d'un champ informations complémentaires
+
+Usage :
+- Copier ce code dans core/models.py
+- Exécuter : python manage.py makemigrations
+- Exécuter : python manage.py migrate
+"""
+
+# ============================================================================
+# 📚 MODÈLE MATIÈRE
+# ============================================================================
+
+class Matiere(models.Model):
     """
-    Représente un élève accompagné par l'association ESA.
-    
-    Table en base de données : core_eleve
+    Représente une matière scolaire disponible pour l'accompagnement
     """
-    
-    # ----------------------------------------------------------------
-    # 📝 INFORMATIONS PERSONNELLES
-    # ----------------------------------------------------------------
     
     nom = models.CharField(
         max_length=100,
-        verbose_name="Nom de famille",
-        help_text="Nom de famille de l'élève"
+        unique=True,
+        verbose_name="Nom de la matière"
+    )
+    
+    ordre = models.IntegerField(
+        default=0,
+        verbose_name="Ordre d'affichage"
+    )
+    
+    actif = models.BooleanField(
+        default=True,
+        verbose_name="Matière active"
+    )
+    
+    class Meta:
+        verbose_name = "Matière"
+        verbose_name_plural = "Matières"
+        ordering = ['ordre', 'nom']
+    
+    def __str__(self):
+        return self.nom
+
+
+# ============================================================================
+# 👨‍🎓 MODÈLE ÉLÈVE
+# ============================================================================
+
+class Eleve(models.Model):
+    """
+    Représente un élève de l'association ESA
+    """
+    
+    # ========================================================================
+    # 📚 CHOIX PRÉDÉFINIS (Données de référence)
+    # ========================================================================
+    
+    CLASSE_CHOICES = [
+        # Primaire
+        ('CP', 'CP'),
+        ('CE1', 'CE1'),
+        ('CE2', 'CE2'),
+        ('CM1', 'CM1'),
+        ('CM2', 'CM2'),
+        # Collège
+        ('6e', '6e'),
+        ('5e', '5e'),
+        ('4e', '4e'),
+        ('3e', '3e'),
+        # Lycée
+        ('2de', '2de'),
+        ('1re', '1re'),
+        ('Terminale', 'Terminale'),
+        # Professionnel
+        ('CAP', 'CAP'),
+        ('ULIS', 'ULIS'),
+    ]
+    
+    STATUT_CHOICES = [
+        ('accompagne', 'Accompagné'),
+        ('a_accompagner', 'À accompagner'),
+        ('en_attente', 'En attente'),
+        ('archive', 'Archivé'),
+    ]
+    
+    # ========================================================================
+    # 👤 INFORMATIONS PERSONNELLES
+    # ========================================================================
+    
+    nom = models.CharField(
+        max_length=100,
+        verbose_name="Nom"
     )
     
     prenom = models.CharField(
@@ -37,65 +121,97 @@ class Eleve(models.Model):
         verbose_name="Prénom"
     )
     
-    # ----------------------------------------------------------------
-    # 🏫 INFORMATIONS SCOLAIRES
-    # ----------------------------------------------------------------
+    telephone = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Téléphone de l'élève",
+        help_text="Numéro de téléphone personnel de l'élève"
+    )
+    
+    # ========================================================================
+    # 👨‍👩‍👧‍👦 INFORMATIONS PARENTS
+    # ========================================================================
+    
+    nom_parent = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Nom du parent",
+        help_text="Nom de famille du parent/tuteur légal"
+    )
+    
+    prenom_parent = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Prénom du parent",
+        help_text="Prénom du parent/tuteur légal"
+    )
+    
+    telephone_parent = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Téléphone des parents",
+        help_text="Numéro de téléphone principal des parents"
+    )
+    
+    # ========================================================================
+    # 🏫 SCOLARITÉ
+    # ========================================================================
     
     classe = models.CharField(
         max_length=50,
-        blank=True,  # Peut être vide
-        verbose_name="Classe",
-        help_text="Exemple : CE2, 6ème, 2nde"
+        choices=CLASSE_CHOICES,
+        blank=True,
+        verbose_name="Classe"
     )
     
-    # ----------------------------------------------------------------
+    etablissement = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Établissement scolaire",
+        help_text="Nom de l'école, collège ou lycée"
+    )
+    
+    # 📚 RELATION MANY-TO-MANY AVEC LES MATIÈRES
+    matieres_souhaitees = models.ManyToManyField(
+        Matiere,
+        blank=True,
+        related_name='eleves',
+        verbose_name="Matières souhaitées",
+        help_text="Sélectionnez une ou plusieurs matières"
+    )
+    
+    # ========================================================================
     # 📍 LOCALISATION
-    # ----------------------------------------------------------------
+    # ========================================================================
     
     adresse = models.CharField(
         max_length=200,
         blank=True,
-        verbose_name="Adresse complète"
+        verbose_name="Adresse"
     )
     
     arrondissement = models.CharField(
         max_length=10,
         blank=True,
         verbose_name="Arrondissement",
-        help_text="Exemple : 13009"
+        help_text="Ex: 1er, 2e, 3e, etc."
     )
     
     latitude = models.FloatField(
-        null=True,  # Peut être NULL en base
-        blank=True,  # Peut être vide dans les formulaires
-        validators=[
-            MinValueValidator(-90),
-            MaxValueValidator(90)
-        ],
-        verbose_name="Latitude",
-        help_text="Coordonnée GPS pour la carte"
+        null=True,
+        blank=True,
+        verbose_name="Latitude"
     )
     
     longitude = models.FloatField(
         null=True,
         blank=True,
-        validators=[
-            MinValueValidator(-180),
-            MaxValueValidator(180)
-        ],
-        verbose_name="Longitude",
-        help_text="Coordonnée GPS pour la carte"
+        verbose_name="Longitude"
     )
     
-    # ----------------------------------------------------------------
+    # ========================================================================
     # 📊 STATUT
-    # ----------------------------------------------------------------
-    
-    STATUT_CHOICES = [
-        ('accompagne', 'Accompagné'),
-        ('a_accompagner', 'À accompagner'),
-        ('en_attente', 'En attente'),
-    ]
+    # ========================================================================
     
     statut = models.CharField(
         max_length=20,
@@ -104,62 +220,165 @@ class Eleve(models.Model):
         verbose_name="Statut"
     )
     
-    # ----------------------------------------------------------------
-    # ⏰ MÉTADONNÉES AUTOMATIQUES
-    # ----------------------------------------------------------------
+    # ========================================================================
+    # 📝 INFORMATIONS COMPLÉMENTAIRES
+    # ========================================================================
+    
+    informations_complementaires = models.TextField(
+        blank=True,
+        verbose_name="Informations complémentaires",
+        help_text="Toute information utile (besoins spécifiques, disponibilités, etc.)"
+    )
+    
+    # ========================================================================
+    # ⏰ MÉTADONNÉES
+    # ========================================================================
     
     date_creation = models.DateTimeField(
-        auto_now_add=True,  # Défini automatiquement à la création
+        auto_now_add=True,
         verbose_name="Date de création"
     )
     
     date_modification = models.DateTimeField(
-        auto_now=True,  # Mis à jour automatiquement à chaque save()
+        auto_now=True,
         verbose_name="Dernière modification"
     )
     
-    # ----------------------------------------------------------------
+    # ========================================================================
     # 🎨 MÉTADONNÉES DU MODÈLE
-    # ----------------------------------------------------------------
+    # ========================================================================
     
     class Meta:
         verbose_name = "Élève"
         verbose_name_plural = "Élèves"
-        ordering = ['nom', 'prenom']  # Tri par défaut
-        
-        # Index pour accélérer les requêtes
-        indexes = [
-            models.Index(fields=['nom', 'prenom']),
-            models.Index(fields=['statut']),
-        ]
-    
-    # ----------------------------------------------------------------
-    # 🔤 REPRÉSENTATION TEXTE
-    # ----------------------------------------------------------------
+        ordering = ['nom', 'prenom']
     
     def __str__(self):
-        """
-        Représentation texte de l'objet.
-        Utilisé dans l'admin Django et les logs.
-        """
         return f"{self.prenom} {self.nom}"
-    
-    # ----------------------------------------------------------------
-    # 🛠️ MÉTHODES PERSONNALISÉES
-    # ----------------------------------------------------------------
     
     def get_nom_complet(self):
-        """Retourne le nom complet de l'élève."""
+        """Retourne le nom complet de l'élève"""
         return f"{self.prenom} {self.nom}"
     
+    def get_nom_parent_complet(self):
+        """Retourne le nom complet du parent"""
+        if self.prenom_parent and self.nom_parent:
+            return f"{self.prenom_parent} {self.nom_parent}"
+        elif self.nom_parent:
+            return self.nom_parent
+        return ""
+    
+    def get_matieres_liste(self):
+        """Retourne la liste des matières souhaitées"""
+        return list(self.matieres_souhaitees.all())
+    
+    def get_matieres_str(self):
+        """Retourne les matières sous forme de chaîne"""
+        matieres = self.matieres_souhaitees.all()
+        return ", ".join([m.nom for m in matieres]) if matieres else "Aucune"
+    
     def est_geolocalisé(self):
-        """Vérifie si l'élève a des coordonnées GPS."""
+        """Vérifie si l'élève a des coordonnées GPS"""
         return self.latitude is not None and self.longitude is not None
     
-    def est_accompagné(self):
-        """Vérifie si l'élève est accompagné."""
-        return self.statut == 'accompagne'
+    est_geolocalisé.boolean = True
+    est_geolocalisé.short_description = "Géolocalisé"
 
+
+    # ========================================================================
+    # 📍 LOCALISATION
+    # ========================================================================
+    
+    adresse = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Adresse"
+    )
+    
+    arrondissement = models.CharField(
+        max_length=10,
+        blank=True,
+        verbose_name="Arrondissement",
+        help_text="Ex: 1er, 2e, 3e, etc."
+    )
+    
+    latitude = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Latitude"
+    )
+    
+    longitude = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Longitude"
+    )
+    
+    # ========================================================================
+    # 📊 STATUT
+    # ========================================================================
+    
+    statut = models.CharField(
+        max_length=20,
+        choices=STATUT_CHOICES,
+        default='a_accompagner',
+        verbose_name="Statut"
+    )
+    
+    # ========================================================================
+    # 📝 INFORMATIONS COMPLÉMENTAIRES
+    # ========================================================================
+    
+    informations_complementaires = models.TextField(
+        blank=True,
+        verbose_name="Informations complémentaires",
+        help_text="Toute information utile (besoins spécifiques, disponibilités, etc.)"
+    )
+    
+    # ========================================================================
+    # ⏰ MÉTADONNÉES
+    # ========================================================================
+    
+    date_creation = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Date de création"
+    )
+    
+    date_modification = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Dernière modification"
+    )
+    
+    # ========================================================================
+    # 🎨 MÉTADONNÉES DU MODÈLE
+    # ========================================================================
+    
+    class Meta:
+        verbose_name = "Élève"
+        verbose_name_plural = "Élèves"
+        ordering = ['nom', 'prenom']
+    
+    def __str__(self):
+        return f"{self.prenom} {self.nom}"
+    
+    def get_nom_complet(self):
+        """Retourne le nom complet de l'élève"""
+        return f"{self.prenom} {self.nom}"
+    
+    def get_nom_parent_complet(self):
+        """Retourne le nom complet du parent"""
+        if self.prenom_parent and self.nom_parent:
+            return f"{self.prenom_parent} {self.nom_parent}"
+        elif self.nom_parent:
+            return self.nom_parent
+        return ""
+    
+    def est_geolocalisé(self):
+        """Vérifie si l'élève a des coordonnées GPS"""
+        return self.latitude is not None and self.longitude is not None
+    
+    est_geolocalisé.boolean = True
+    est_geolocalisé.short_description = "Géolocalisé"
 
 # ============================================================================
 # 🎓 MODÈLE BÉNÉVOLE

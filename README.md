@@ -1,6 +1,4 @@
-# 🎓 ESA Manager - Projet Django d'apprentissage
-
-## 📚 **Ce projet est VOTRE apprentissage Django !**
+# 🎓 ESA Manager - Projet Django
 
 Chaque fichier est **commenté ligne par ligne** pour que vous compreniez TOUT.
 

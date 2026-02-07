@@ -1,88 +1,499 @@
 /*
-🎓 STYLE.CSS - Styles personnalisés pour ESA Manager
+🎓 STYLE.CSS - Thème "Nature & Chaleur" pour ESA Manager
+Palette personnalisée : Vert, Beige, Nature, Marron
 
-Ce fichier contient les styles CSS personnalisés de l'application.
-Bootstrap est déjà chargé dans base.html, ce fichier complète Bootstrap.
-
-Pour utiliser ce fichier dans un template :
-{% load static %}
-<link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+Ce fichier écrase les styles Bootstrap chargés via django-bootstrap5
 */
 
 /* ============================================================================
-   🎨 VARIABLES CSS (Personnalisables)
+   🎨 PALETTE DE COULEURS PERSONNALISÉE
    ============================================================================ */
 
 :root {
-    --primary-color: #37463D;
-    --secondary-color: #5B696B;
-    --success-color: #28a745;
-    --danger-color: #dc3545;
-    --warning-color: #ffc107;
-    --info-color: #17a2b8;
+    /* Palette principale "Nature & Chaleur" */
+    --vert: #5A6A56;           /* Vert olive foncé */
+    --non-classe: #E8D9A0;     /* Beige/Jaune pâle */
+    --nature: #5F6F52;         /* Vert nature */
+    --marron: #C08B5C;         /* Marron/Caramel */
+    --beige: #F4DDB3;          /* Beige clair */
     
-    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    --border-radius: 8px;
-    --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --bs-blue: #0d6efd;
-    --bs-indigo: #6610f2;
-    --bs-purple: #6f42c1;
-    --bs-pink: #d63384;
-    --bs-red: #dc3545;
-    --bs-orange: #fd7e14;
-    --bs-yellow: #ffc107;
-    --bs-green: #198754;
-    --bs-teal: #20c997;
-    --bs-cyan: #0dcaf0;
-    --bs-white: #fff;
-    --bs-gray: #6c757d;
-    --bs-gray-dark: #343a40;
-    --bs-primary : #37463D;
-    --bs-primary-rgb : #37463D;
-    --bs-secondary: #6c757d;
-    --bs-success: #198754;
-    --bs-info: #0dcaf0;
-    --bs-warning: #ffc107;
-    --bs-danger: #dc3545;
-    --bs-light: #f8f9fa;
-    --bs-dark: #212529;
-    --bs-font-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-    --bs-font-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    --bs-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0));
+    /* Attribution des couleurs Bootstrap */
+    --primary: #5F6F52;        /* Vert nature (principal) */
+    --primary-dark: #4A5741;   /* Vert nature foncé */
+    --primary-light: #7A8F6D;  /* Vert nature clair */
+    
+    --secondary: #C08B5C;      /* Marron (secondaire) */
+    --secondary-dark: #A57247; /* Marron foncé */
+    --secondary-light: #D4A574; /* Marron clair */
+    
+    --accent: #E8D9A0;         /* Beige/Jaune pour les accents */
+    --accent-dark: #D4C585;    /* Beige foncé */
+    
+    --success: #7A8F6D;        /* Vert clair pour succès */
+    --danger: #B85C50;         /* Rouge terre cuite */
+    --warning: #C08B5C;        /* Marron pour attention */
+    --info: #6B8E8F;           /* Bleu-vert eau */
+    
+    /* Couleurs neutres */
+    --bg-light: #FAF8F3;       /* Fond très clair */
+    --bg-card: #FFFFFF;        /* Fond des cartes */
+    --text-dark: #3A3A3A;      /* Texte principal */
+    --text-muted: #6B6B6B;     /* Texte secondaire */
+    
+    /* Typographie */
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    
+    /* Espacements & Effets */
+    --border-radius: 12px;
+    --border-radius-lg: 16px;
+    --box-shadow: 0 4px 16px rgba(95, 111, 82, 0.15);
+    --box-shadow-hover: 0 8px 24px rgba(95, 111, 82, 0.25);
+    --transition: all 0.3s ease;
 }
 
 /* ============================================================================
-   📄 GÉNÉRAL
+   📄 STYLES GÉNÉRAUX
    ============================================================================ */
 
 body {
     font-family: var(--font-family);
-}
-
-/* Amélioration des cartes */
-.card {
-    border-radius: var(--border-radius);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--box-shadow);
-}
-
-/* Boutons avec effet hover */
-.btn {
-    border-radius: var(--border-radius);
-    transition: all 0.2s ease;
-}
-
-.btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    background-color: var(--bg-light);
+    color: var(--text-dark);
 }
 
 /* ============================================================================
-   🗺️ CARTES LEAFLET
+   🎨 ÉCRASEMENT DES CLASSES BOOTSTRAP
+   ============================================================================ */
+
+/* ---------- COULEURS PRIMAIRES ---------- */
+
+.bg-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--vert) 100%) !important;
+}
+
+.text-primary {
+    color: var(--primary) !important;
+}
+
+.border-primary {
+    border-color: var(--primary) !important;
+}
+
+/* ---------- BOUTONS ---------- */
+
+.btn {
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    padding: 0.75rem 2rem;
+    transition: var(--transition);
+    border: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--vert) 100%) !important;
+    border: none !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(95, 111, 82, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--vert) 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(95, 111, 82, 0.4) !important;
+}
+
+.btn-primary:active,
+.btn-primary:focus {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--vert) 100%) !important;
+    box-shadow: 0 4px 12px rgba(95, 111, 82, 0.3) !important;
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, var(--secondary) 0%, var(--marron) 100%) !important;
+    border: none !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(192, 139, 92, 0.3);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, var(--secondary-dark) 0%, var(--marron) 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(192, 139, 92, 0.4) !important;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--success) 0%, #6A7D5F 100%) !important;
+    border: none !important;
+    color: white !important;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #6A7D5F 0%, #5A6D4F 100%) !important;
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, var(--danger) 0%, #A04B3F 100%) !important;
+    border: none !important;
+    color: white !important;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #A04B3F 0%, #8D3A2E 100%) !important;
+    transform: translateY(-2px);
+}
+
+.btn-warning {
+    background-color: var(--warning) !important;
+    border: none !important;
+    color: white !important;
+}
+
+.btn-warning:hover {
+    background-color: var(--secondary-dark) !important;
+    transform: translateY(-2px);
+}
+
+.btn-lg {
+    padding: 1rem 2.5rem;
+    font-size: 1.1rem;
+}
+
+/* ---------- CARTES ---------- */
+
+.card {
+    border: none !important;
+    border-radius: var(--border-radius-lg) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06) !important;
+    transition: var(--transition);
+    overflow: hidden;
+    background-color: var(--bg-card);
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--vert) 100%) !important;
+    color: white !important;
+    border: none !important;
+    font-weight: 600;
+    padding: 1rem 1.5rem !important;
+}
+
+.card-body {
+    padding: 1.5rem !important;
+}
+
+.card-footer {
+    background-color: var(--bg-light) !important;
+    border-top: 1px solid #E8E8E8 !important;
+}
+
+/* Variantes de cartes avec bordure colorée et fond */
+.card-nature {
+    border-left: 10px solid var(--primary-light) !important;
+    background: linear-gradient(135deg, var(--nature), var(--primary-light)) !important;
+    color: white !important;
+}
+
+.card-nature .card-body,
+.card-nature .card-header {
+    color: white !important;
+}
+
+.card-marron {
+    border-left: 10px solid var(--secondary-light) !important;
+    background: linear-gradient(135deg, var(--marron), var(--secondary-light)) !important;
+    color: white !important;
+}
+
+.card-marron .card-body,
+.card-marron .card-header {
+    color: white !important;
+}
+
+.card-accent {
+    border-left: 4px solid var(--accent-dark) !important;
+    background-color: var(--accent) !important;
+    color: var(--text-dark) !important;
+}
+
+.card-accent .card-body,
+.card-accent .card-header {
+    color: var(--text-dark) !important;
+}
+
+/* ---------- NAVBAR ---------- */
+
+.navbar {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--vert) 100%) !important;
+    box-shadow: 0 4px 20px rgba(95, 111, 82, 0.2);
+    padding: 1rem 0;
+}
+
+.navbar-dark .navbar-brand {
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: white !important;
+    transition: var(--transition);
+}
+
+.navbar-dark .navbar-brand:hover {
+    transform: scale(1.05);
+    color: var(--accent) !important;
+}
+
+.navbar-dark .nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 500;
+    margin: 0 0.5rem;
+    padding: 0.5rem 1rem !important;
+    border-radius: 8px;
+    transition: var(--transition);
+}
+
+.navbar-dark .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white !important;
+}
+
+.navbar-dark .nav-link:active,
+.navbar-dark .nav-link.active {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white !important;
+}
+
+.navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 1%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
+}
+
+/* ---------- FOOTER ---------- */
+
+footer.bg-light {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--vert) 100%) !important;
+    color: white !important;
+    padding: 2rem 0;
+    margin-top: 4rem;
+}
+
+footer .text-muted {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+footer .text-danger {
+    color: var(--marron) !important;
+}
+
+/* ---------- ALERTS ---------- */
+
+.alert {
+    border: none !important;
+    border-radius: var(--border-radius) !important;
+    border-left: 4px solid !important;
+}
+
+.alert-success {
+    background-color: #E8F5E5 !important;
+    color: #3A5A32 !important;
+    border-left-color: var(--success) !important;
+}
+
+.alert-danger {
+    background-color: #F8E5E3 !important;
+    color: #7A3A32 !important;
+    border-left-color: var(--danger) !important;
+}
+
+.alert-warning {
+    background-color: #FFF4E5 !important;
+    color: #8A5A32 !important;
+    border-left-color: var(--warning) !important;
+}
+
+.alert-info {
+    background-color: #E5F3F5 !important;
+    color: #2A5A5D !important;
+    border-left-color: var(--info) !important;
+}
+
+/* ---------- BADGES ---------- */
+
+.badge {
+    border-radius: 6px;
+    font-weight: 600;
+    padding: 0.35rem 0.65rem;
+}
+
+.badge.bg-primary {
+    background-color: var(--primary) !important;
+}
+
+.badge.bg-secondary {
+    background-color: var(--secondary) !important;
+}
+
+.badge.bg-success {
+    background-color: var(--success) !important;
+}
+
+/* Badge personnalisé avec fond beige et texte foncé */
+.badge-accent {
+    background-color: var(--accent-dark) !important;
+    color: var(--text-dark) !important;
+}
+
+/* ---------- PAGINATION ---------- */
+
+.pagination .page-link {
+    color: var(--primary);
+    border-radius: 8px;
+    margin: 0 0.2rem;
+    border: 1px solid #E5E7EB;
+}
+
+.pagination .page-link:hover {
+    background-color: var(--primary-light);
+    color: white;
+    border-color: var(--primary-light);
+}
+
+.pagination .page-item.active .page-link {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+/* ============================================================================
+   📊 COMPOSANTS PERSONNALISÉS
+   ============================================================================ */
+
+/* ---------- STAT CARDS ---------- */
+
+.stat-card {
+    background: var(--bg-card);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Barre colorée en haut avec la palette */
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, 
+        var(--vert) 0%, 
+        var(--nature) 25%, 
+        var(--marron) 50%, 
+        var(--accent-dark) 75%, 
+        var(--beige) 100%
+    );
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card .icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--marron) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-card .number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 0.5rem 0;
+}
+
+.stat-card .label {
+    color: var(--text-muted);
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+/* Variantes de stat-cards avec couleurs différentes */
+.stat-card-nature .icon {
+    background: linear-gradient(135deg, var(--nature) 0%, var(--primary-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.stat-card-marron .icon {
+    background: linear-gradient(135deg, var(--marron) 0%, var(--secondary-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* ---------- GRADIENTS ---------- */
+
+.gradient-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--vert) 100%);
+}
+
+.gradient-secondary {
+    background: linear-gradient(135deg, var(--secondary) 0%, var(--marron) 100%);
+}
+
+.gradient-success {
+    background: linear-gradient(135deg, var(--success) 0%, var(--primary-light) 100%);
+}
+
+.gradient-warm {
+    background: linear-gradient(135deg, var(--marron) 0%, var(--accent-dark) 100%);
+}
+
+.gradient-nature {
+    background: linear-gradient(135deg, var(--nature) 0%, var(--vert) 100%);
+}
+
+/* Gradient complet de la palette */
+.gradient-palette {
+    background: linear-gradient(135deg, 
+        var(--vert) 0%, 
+        var(--nature) 25%, 
+        var(--marron) 50%, 
+        var(--accent) 75%, 
+        var(--beige) 100%
+    );
+}
+
+/* ---------- TEXTE AVEC GRADIENT ---------- */
+
+.text-gradient {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--marron) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.text-gradient-warm {
+    background: linear-gradient(135deg, var(--marron) 0%, var(--accent-dark) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ============================================================================
+   🗺️ CARTES LEAFLET (si utilisées)
    ============================================================================ */
 
 .leaflet-popup-content {
@@ -90,152 +501,216 @@ body {
 }
 
 .leaflet-popup-content h6 {
-    color: var(--primary-color);
-    border-bottom: 2px solid var(--primary-color);
-    padding-bottom: 5px;
-    margin-bottom: 10px;
+    color: var(--primary);
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
 }
 
 /* ============================================================================
-   📊 STATISTIQUES (Page d'accueil)
+   🎯 ACCENTS DE COULEUR
    ============================================================================ */
 
-.stat-card {
-    text-align: center;
-    padding: 20px;
-    border-radius: var(--border-radius);
-    background: white;
-    box-shadow: var(--box-shadow);
-    transition: transform 0.3s ease;
+/* Bordures avec les couleurs de la palette */
+.border-vert {
+    border-color: var(--vert) !important;
 }
 
-.stat-card:hover {
-    transform: scale(1.05);
+.border-nature {
+    border-color: var(--nature) !important;
 }
 
-.stat-card .icon {
-    font-size: 3rem;
-    margin-bottom: 15px;
+.border-marron {
+    border-color: var(--marron) !important;
 }
 
-.stat-card .number {
-    font-size: 2.5rem;
-    font-weight: bold;
-    margin: 10px 0;
+.border-accent {
+    border-color: var(--accent-dark) !important;
 }
 
-.stat-card .label {
-    color: #6c757d;
-    font-size: 1rem;
+/* Fonds avec les couleurs de la palette */
+.bg-vert {
+    background-color: var(--vert) !important;
+    color: white !important;
 }
 
-/* ============================================================================
-   🎨 GRADIENTS
-   ============================================================================ */
-
-.gradient-primary {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+.bg-nature {
+    background-color: var(--nature) !important;
+    color: white !important;
 }
 
-.gradient-success {
-    background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+.bg-marron {
+    background-color: var(--marron) !important;
+    color: white !important;
 }
 
-.gradient-danger {
-    background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+.bg-accent {
+    background-color: var(--accent) !important;
+    color: var(--text-dark) !important;
 }
 
-.gradient-info {
-    background: linear-gradient(135deg, #2196F3 0%, #21CBF3 100%);
+.bg-beige {
+    background-color: var(--beige) !important;
+    color: var(--text-dark) !important;
 }
 
 /* ============================================================================
    📱 RESPONSIVE
    ============================================================================ */
 
-/* Mobile */
 @media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+    
     .stat-card .number {
         font-size: 2rem;
     }
     
     .stat-card .icon {
-        font-size: 2rem;
+        font-size: 2.5rem;
+    }
+    
+    .btn {
+        padding: 0.6rem 1.5rem;
     }
 }
 
 /* ============================================================================
-   🎯 CLASSES UTILITAIRES
+   ✨ ANIMATIONS
    ============================================================================ */
 
-/* Texte avec gradient */
-.text-gradient {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-/* Ombre portée */
-.shadow-custom {
-    box-shadow: var(--box-shadow);
+@keyframes slideInFromLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
-/* Bordure arrondie */
-.rounded-custom {
-    border-radius: var(--border-radius);
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
 }
 
-/* Animation de chargement */
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+.fade-in {
+    animation: fadeIn 0.6s ease-out;
 }
 
-.spinner {
-    border: 4px solid rgba(0, 0, 0, 0.1);
-    border-left-color: var(--primary-color);
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
+.slide-in {
+    animation: slideInFromLeft 0.6s ease-out;
+}
+
+.pulse {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* Animation au chargement */
+.card,
+.stat-card {
+    animation: fadeIn 0.6s ease-out;
 }
 
 /* ============================================================================
-   🎓 NOTES D'APPRENTISSAGE
+   🎨 CLASSES UTILITAIRES SUPPLÉMENTAIRES
+   ============================================================================ */
+
+.shadow-custom {
+    box-shadow: var(--box-shadow) !important;
+}
+
+.shadow-custom-hover:hover {
+    box-shadow: var(--box-shadow-hover) !important;
+}
+
+.rounded-custom {
+    border-radius: var(--border-radius) !important;
+}
+
+.rounded-custom-lg {
+    border-radius: var(--border-radius-lg) !important;
+}
+
+/* Spinner de chargement personnalisé */
+.spinner-border-primary {
+    color: var(--primary) !important;
+}
+
+/* Divider avec gradient */
+.divider-gradient {
+    height: 2px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        var(--primary) 20%, 
+        var(--marron) 50%, 
+        var(--accent-dark) 80%, 
+        transparent 100%
+    );
+    border: none;
+    margin: 2rem 0;
+}
+
+/* ============================================================================
+   🎓 NOTES POUR TOI
    ============================================================================ */
 
 /*
-📝 Organisation CSS :
+📝 PALETTE DE COULEURS UTILISÉE :
 
-1. VARIABLES CSS (--nom-variable) :
-   Centralisent les valeurs réutilisables
-   Changez les couleurs ici pour tout modifier !
+🟢 VERT (#5A6A56) - Vert olive foncé
+    Utilisé pour : navbar alternative, bordures
 
-2. SÉLECTEURS :
-   .class : Classe CSS
-   #id : ID unique
-   element : Balise HTML
-   .parent .child : Descendant
-   .parent > .child : Enfant direct
+🌾 NON CLASSÉ (#E8D9A0) - Beige/Jaune pâle
+    Utilisé pour : accents, badges, fonds clairs
 
-3. PSEUDO-CLASSES :
-   :hover : Au survol
-   :active : Au clic
-   :focus : Au focus
-   :nth-child(n) : Nième enfant
+🌿 NATURE (#5F6F52) - Vert nature
+    Utilisé pour : couleur principale, boutons primaires, navbar
 
-4. RESPONSIVE :
-   @media (max-width: 768px) : Mobile
-   @media (min-width: 769px) and (max-width: 1024px) : Tablette
-   @media (min-width: 1025px) : Desktop
+🟤 MARRON (#C08B5C) - Marron/Caramel
+    Utilisé pour : boutons secondaires, accents chauds
 
-5. ANIMATIONS :
-   @keyframes nom { ... } : Définir l'animation
-   animation: nom durée ... : Appliquer l'animation
+🔆 BEIGE (#F4DDB3) - Beige clair
+    Utilisé pour : arrière-plans, cartes, zones douces
 
-📚 Pour aller plus loin :
-- MDN CSS : https://developer.mozilla.org/fr/docs/Web/CSS
-- CSS Tricks : https://css-tricks.com/
-- Can I Use : https://caniuse.com/ (compatibilité navigateurs)
+💡 COMMENT UTILISER :
+
+1. Remplace ton style.css actuel par ce fichier
+2. Les classes Bootstrap standards (btn-primary, card, etc.) utilisent automatiquement ces couleurs
+3. Tu peux aussi utiliser les classes personnalisées :
+   - .bg-nature, .bg-marron, .bg-accent
+   - .border-nature, .border-marron
+   - .gradient-nature, .gradient-warm
+   - .stat-card-nature, .stat-card-marron
+
+🎨 PERSONNALISER DAVANTAGE :
+
+Modifie les variables au début du fichier (:root) pour ajuster :
+- Les nuances de couleurs
+- Les espacements
+- Les ombres
+- Les animations
+
+🚀 ASTUCE PRO :
+
+Utilise la classe .gradient-palette pour afficher toute la palette dans un élément !
+Exemple : <div class="p-4 gradient-palette">...</div>
 */

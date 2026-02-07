@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',       # Framework de messages
     'django.contrib.staticfiles',    # Gestion des fichiers statiques (CSS, JS, images)
     'bootstrap5',               # Intégration de Bootstrap 5
+    'django_bootstrap_icons',  # Intégration des icônes Bootstrap Icons
     # Vos applications personnalisées
     'core',  # ← Application principale ESA Manager
 ]
