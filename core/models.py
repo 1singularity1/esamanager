@@ -184,10 +184,39 @@ class Eleve(models.Model):
     # 📍 LOCALISATION
     # ========================================================================
     
+    code_postal = models.CharField(
+        max_length=10,
+        blank=True,
+        verbose_name="Code postal",
+        help_text="Ex: 13001, 13008"
+    )
+
+    ville = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Ville",
+        help_text="Ex: Marseille, Aix-en-Provence"
+    )
+
+    numero_rue = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Numéro",
+        help_text="Numéro de rue (ex: 12, 12 bis, 12 ter)"
+    )
+
     adresse = models.CharField(
         max_length=200,
         blank=True,
-        verbose_name="Adresse"
+        verbose_name="Nom de la rue",
+        help_text="Ex: Rue de la République, Avenue du Prado"
+    )
+
+    code_postal = models.CharField(
+        max_length=10,
+        blank=True,
+        verbose_name="Code postal",
+        help_text="Ex: 13001, 13008"
     )
     
     arrondissement = models.CharField(
@@ -213,11 +242,24 @@ class Eleve(models.Model):
     # 📊 STATUT
     # ========================================================================
     
+    STATUT_SAISIE_CHOICES = [
+    ('brouillon', 'Brouillon (saisie en cours)'),
+    ('complet', 'Complet (validé)'),
+]
+
+    statut_saisie = models.CharField(
+        max_length=20,
+        choices=STATUT_SAISIE_CHOICES,
+        default='brouillon',
+        verbose_name="Statut de saisie",
+        help_text="Brouillon = saisie en cours, Complet = fiche validée"
+    )
+
     statut = models.CharField(
         max_length=20,
         choices=STATUT_CHOICES,
         default='a_accompagner',
-        verbose_name="Statut"
+        verbose_name="Statut d'accompagnement"
     )
     
     # ========================================================================
@@ -284,101 +326,6 @@ class Eleve(models.Model):
     est_geolocalisé.boolean = True
     est_geolocalisé.short_description = "Géolocalisé"
 
-
-    # ========================================================================
-    # 📍 LOCALISATION
-    # ========================================================================
-    
-    adresse = models.CharField(
-        max_length=200,
-        blank=True,
-        verbose_name="Adresse"
-    )
-    
-    arrondissement = models.CharField(
-        max_length=10,
-        blank=True,
-        verbose_name="Arrondissement",
-        help_text="Ex: 1er, 2e, 3e, etc."
-    )
-    
-    latitude = models.FloatField(
-        null=True,
-        blank=True,
-        verbose_name="Latitude"
-    )
-    
-    longitude = models.FloatField(
-        null=True,
-        blank=True,
-        verbose_name="Longitude"
-    )
-    
-    # ========================================================================
-    # 📊 STATUT
-    # ========================================================================
-    
-    statut = models.CharField(
-        max_length=20,
-        choices=STATUT_CHOICES,
-        default='a_accompagner',
-        verbose_name="Statut"
-    )
-    
-    # ========================================================================
-    # 📝 INFORMATIONS COMPLÉMENTAIRES
-    # ========================================================================
-    
-    informations_complementaires = models.TextField(
-        blank=True,
-        verbose_name="Informations complémentaires",
-        help_text="Toute information utile (besoins spécifiques, disponibilités, etc.)"
-    )
-    
-    # ========================================================================
-    # ⏰ MÉTADONNÉES
-    # ========================================================================
-    
-    date_creation = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Date de création"
-    )
-    
-    date_modification = models.DateTimeField(
-        auto_now=True,
-        verbose_name="Dernière modification"
-    )
-    
-    # ========================================================================
-    # 🎨 MÉTADONNÉES DU MODÈLE
-    # ========================================================================
-    
-    class Meta:
-        verbose_name = "Élève"
-        verbose_name_plural = "Élèves"
-        ordering = ['nom', 'prenom']
-    
-    def __str__(self):
-        return f"{self.prenom} {self.nom}"
-    
-    def get_nom_complet(self):
-        """Retourne le nom complet de l'élève"""
-        return f"{self.prenom} {self.nom}"
-    
-    def get_nom_parent_complet(self):
-        """Retourne le nom complet du parent"""
-        if self.prenom_parent and self.nom_parent:
-            return f"{self.prenom_parent} {self.nom_parent}"
-        elif self.nom_parent:
-            return self.nom_parent
-        return ""
-    
-    def est_geolocalisé(self):
-        """Vérifie si l'élève a des coordonnées GPS"""
-        return self.latitude is not None and self.longitude is not None
-    
-    est_geolocalisé.boolean = True
-    est_geolocalisé.short_description = "Géolocalisé"
 
 # ============================================================================
 # 🎓 MODÈLE BÉNÉVOLE

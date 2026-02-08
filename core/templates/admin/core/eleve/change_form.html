@@ -1,0 +1,213 @@
+<!-- 💾 Template admin personnalisé avec autosave -->
+
+<!--
+Créer ce fichier dans : core/templates/admin/core/eleve/change_form.html
+-->
+
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+
+<style>
+    #autosave-status {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 10px 20px;
+        background: #4CAF50;
+        color: white;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        display: none;
+        z-index: 9999;
+        font-size: 14px;
+    }
+    #autosave-status.saving {
+        background: #FF9800;
+    }
+    #autosave-status.error {
+        background: #F44336;
+    }
+</style>
+
+<script>
+(function() {
+    // Configuration
+    const AUTOSAVE_INTERVAL = 30000; // 30 secondes
+    const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    let autosaveTimer = null;
+    let isDirty = false;
+    let eleveId = null;
+    
+    // Récupérer l'ID de l'élève depuis l'URL
+    const urlParts = window.location.pathname.split('/');
+    const changeIndex = urlParts.indexOf('change');
+    if (changeIndex > 0 && urlParts[changeIndex - 1]) {
+        eleveId = urlParts[changeIndex - 1];
+    }
+    
+    // Fonction pour afficher le statut
+    function showStatus(message, type = 'success') {
+        const statusDiv = document.getElementById('autosave-status');
+        if (!statusDiv) {
+            const div = document.createElement('div');
+            div.id = 'autosave-status';
+            document.body.appendChild(div);
+        }
+        
+        const status = document.getElementById('autosave-status');
+        status.textContent = message;
+        status.className = type;
+        status.style.display = 'block';
+        
+        if (type === 'success') {
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+        }
+    }
+    
+    // Fonction pour collecter les données du formulaire
+    function getFormData() {
+        const data = {
+            id: eleveId,
+            nom: document.getElementById('id_nom')?.value || '',
+            prenom: document.getElementById('id_prenom')?.value || '',
+            telephone: document.getElementById('id_telephone')?.value || '',
+            nom_parent: document.getElementById('id_nom_parent')?.value || '',
+            prenom_parent: document.getElementById('id_prenom_parent')?.value || '',
+            telephone_parent: document.getElementById('id_telephone_parent')?.value || '',
+            classe: document.getElementById('id_classe')?.value || '',
+            etablissement: document.getElementById('id_etablissement')?.value || '',
+            ville: document.getElementById('id_ville')?.value || '',
+            code_postal: document.getElementById('id_code_postal')?.value || '',
+            numero_rue: document.getElementById('id_numero_rue')?.value || '',
+            adresse: document.getElementById('id_adresse')?.value || '',
+            arrondissement: document.getElementById('id_arrondissement')?.value || '',
+            latitude: document.getElementById('id_latitude')?.value || '',
+            longitude: document.getElementById('id_longitude')?.value || '',
+            statut: document.getElementById('id_statut')?.value || 'a_accompagner',
+            informations_complementaires: document.getElementById('id_informations_complementaires')?.value || '',
+        };
+        
+        return data;
+    }
+    
+    // Fonction de sauvegarde automatique
+    async function autosave() {
+        if (!isDirty) {
+            console.log('Pas de modifications, pas de sauvegarde');
+            return;
+        }
+        
+        showStatus('Sauvegarde en cours...', 'saving');
+        
+        const data = getFormData();
+        
+        try {
+            const response = await fetch('/admin/autosave/eleve/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN,
+                },
+                body: JSON.stringify(data),
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Si c'était une nouvelle création, mettre à jour l'ID
+                if (!eleveId && result.id) {
+                    eleveId = result.id;
+                    // Mettre à jour l'URL sans recharger la page
+                    const newUrl = window.location.pathname.replace('/add/', `/${result.id}/change/`);
+                    window.history.replaceState({}, '', newUrl);
+                }
+                
+                const now = new Date().toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                showStatus(`✓ Brouillon sauvegardé à ${now}`, 'success');
+                isDirty = false;
+            } else {
+                showStatus('✗ Erreur de sauvegarde: ' + result.error, 'error');
+            }
+        } catch (error) {
+            console.error('Erreur autosave:', error);
+            showStatus('✗ Erreur de connexion', 'error');
+        }
+    }
+    
+    // Marquer le formulaire comme modifié
+    function markDirty() {
+        isDirty = true;
+    }
+    
+    // Démarrer l'autosave
+    function startAutosave() {
+        // Sauvegarder immédiatement
+        setTimeout(autosave, 2000); // Première sauvegarde après 2 secondes
+        
+        // Puis toutes les 30 secondes
+        autosaveTimer = setInterval(autosave, AUTOSAVE_INTERVAL);
+        
+        console.log('Autosave activé (toutes les 30 secondes)');
+    }
+    
+    // Arrêter l'autosave
+    function stopAutosave() {
+        if (autosaveTimer) {
+            clearInterval(autosaveTimer);
+            console.log('Autosave désactivé');
+        }
+    }
+    
+    // Intercepter le submit normal pour marquer comme "complet"
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('#eleve_form, form[method="post"]');
+        
+        if (form) {
+            // Écouter tous les changements de champs
+            form.addEventListener('change', markDirty);
+            form.addEventListener('input', markDirty);
+            
+            // Démarrer l'autosave
+            startAutosave();
+            
+            // Intercepter la soumission du formulaire
+            form.addEventListener('submit', async function(e) {
+                // Ne pas empêcher la soumission, juste marquer comme complet
+                if (eleveId) {
+                    try {
+                        await fetch('/admin/validate/eleve/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': CSRF_TOKEN,
+                            },
+                            body: JSON.stringify({ id: eleveId }),
+                        });
+                    } catch (error) {
+                        console.error('Erreur validation:', error);
+                    }
+                }
+            });
+        }
+        
+        // Arrêter l'autosave quand on quitte la page
+        window.addEventListener('beforeunload', function() {
+            stopAutosave();
+            if (isDirty) {
+                autosave(); // Dernière sauvegarde
+            }
+        });
+    });
+})();
+</script>
+
+{% endblock %}

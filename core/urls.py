@@ -73,6 +73,10 @@ urlpatterns = [
     
     # URL : /benevoles/3/
     path('benevoles/<int:pk>/', views.benevole_detail, name='benevole_detail'),
+    
+    path('admin/autosave/eleve/', views.autosave_eleve, name='autosave_eleve'),
+    path('admin/validate/eleve/', views.validate_eleve, name='validate_eleve'),
+
 ]
 
 

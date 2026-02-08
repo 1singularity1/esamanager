@@ -9,6 +9,7 @@ Ici, on personnalise comment nos modèles apparaissent dans l'admin.
 
 from django.contrib import admin
 from .models import Matiere, Eleve, Benevole, Binome
+from .forms import EleveAdminForm, BenevoleAdminForm
 
 
 # ============================================================================
@@ -36,6 +37,7 @@ class MatiereAdmin(admin.ModelAdmin):
 
 @admin.register(Eleve)
 class EleveAdmin(admin.ModelAdmin):
+    form = EleveAdminForm
     """Configuration de l'affichage des élèves dans l'admin"""
     
     # ========================================================================
@@ -48,6 +50,7 @@ class EleveAdmin(admin.ModelAdmin):
         'classe',
         'etablissement',
         'statut',
+        'statut_saisie',
         'afficher_matieres',
         'telephone_parent',
         'arrondissement',
@@ -59,6 +62,7 @@ class EleveAdmin(admin.ModelAdmin):
     
     list_filter = [
         'statut',
+        'statut_saisie',
         'classe',
         'arrondissement',
         'matieres_souhaitees',  # Filtre par matière
@@ -85,17 +89,17 @@ class EleveAdmin(admin.ModelAdmin):
     # 📝 FORMULAIRE D'ÉDITION
     # ========================================================================
     
-    readonly_fields = ['date_creation', 'date_modification', 'est_geolocalisé']
+    readonly_fields = ['date_creation', 'date_modification', 'est_geolocalisé','statut_saisie']
     
     fieldsets = (
-        ('👤 Informations de l\'élève', {
+        ('👤 Elève', {
             'fields': (
                 ('nom', 'prenom'),
                 'telephone',
             )
         }),
         
-        ('👨‍👩‍👧‍👦 Informations des parents', {
+        ('👨‍👩‍👧‍👦 Parents', {
             'fields': (
                 ('nom_parent', 'prenom_parent'),
                 'telephone_parent',
@@ -103,6 +107,18 @@ class EleveAdmin(admin.ModelAdmin):
             'description': 'Coordonnées des parents ou tuteurs légaux',
         }),
         
+        ('📍 Localisation', {
+            'fields': (
+                'ville',
+                'adresse',
+                'code_postal',
+                'numero_rue',
+                'arrondissement',
+                ('latitude', 'longitude'),
+            ),
+            'description': 'L\'arrondissement et les coordonnées GPS sont remplis automatiquement',
+        }),
+
         ('🏫 Scolarité', {
             'fields': (
                 'classe',
@@ -111,19 +127,9 @@ class EleveAdmin(admin.ModelAdmin):
             ),
         }),
         
-        ('📍 Localisation', {
-            'fields': (
-                'adresse',
-                'arrondissement',
-                ('latitude', 'longitude'),
-            ),
-            'classes': ('collapse',),
-            'description': 'Coordonnées GPS pour la carte interactive',
-        }),
-        
         ('📊 Statut', {
             'fields': (
-                'statut',
+                'statut_saisie','statut',
             ),
         }),
         
@@ -160,7 +166,7 @@ class EleveAdmin(admin.ModelAdmin):
     # ⚡ ACTIONS RAPIDES
     # ========================================================================
     
-    actions = ['marquer_accompagne', 'marquer_a_accompagner', 'exporter_csv']
+    actions = ['marquer_accompagne', 'marquer_a_accompagner', 'marquer_complet','exporter_csv']
     
     def marquer_accompagne(self, request, queryset):
         """Marque les élèves sélectionnés comme accompagnés"""
@@ -173,6 +179,11 @@ class EleveAdmin(admin.ModelAdmin):
         updated = queryset.update(statut='a_accompagner')
         self.message_user(request, f'{updated} élève(s) marqué(s) comme à accompagner.')
     marquer_a_accompagner.short_description = "⏳ Marquer comme à accompagner"
+    
+    def marquer_complet(self, request, queryset):
+        updated = queryset.update(statut_saisie='complet')
+        self.message_user(request, f'{updated} fiche(s) marquée(s) comme complète(s).')
+    marquer_complet.short_description = "✅ Marquer comme fiche complète"
     
     def exporter_csv(self, request, queryset):
         """Exporte les élèves sélectionnés en CSV"""
@@ -210,127 +221,7 @@ class EleveAdmin(admin.ModelAdmin):
         
         return response
     exporter_csv.short_description = "📥 Exporter en CSV"
-
-
-    # ========================================================================
-    # 📝 FORMULAIRE D'ÉDITION
-    # ========================================================================
     
-    readonly_fields = ['date_creation', 'date_modification', 'est_geolocalisé']
-    
-    fieldsets = (
-        ('👤 Informations de l\'élève', {
-            'fields': (
-                ('nom', 'prenom'),
-                'telephone',
-            )
-        }),
-        
-        ('👨‍👩‍👧‍👦 Informations des parents', {
-            'fields': (
-                ('nom_parent', 'prenom_parent'),
-                'telephone_parent',
-            ),
-            'description': 'Coordonnées des parents ou tuteurs légaux',
-        }),
-        
-        ('🏫 Scolarité', {
-            'fields': (
-                'classe',
-                'etablissement',
-                'matieres_souhaitees',
-            ),
-        }),
-        
-        ('📍 Localisation', {
-            'fields': (
-                'adresse',
-                'arrondissement',
-                ('latitude', 'longitude'),
-            ),
-            'classes': ('collapse',),
-            'description': 'Coordonnées GPS pour la carte interactive',
-        }),
-        
-        ('📊 Statut', {
-            'fields': (
-                'statut',
-            ),
-        }),
-        
-        ('📝 Remarques', {
-            'fields': (
-                'informations_complementaires',
-            ),
-            'classes': ('collapse',),
-        }),
-        
-        ('⏰ Métadonnées', {
-            'fields': (
-                'date_creation',
-                'date_modification',
-                'est_geolocalisé',
-            ),
-            'classes': ('collapse',),
-        }),
-    )
-    
-    # ========================================================================
-    # ⚡ ACTIONS RAPIDES
-    # ========================================================================
-    
-    actions = ['marquer_accompagne', 'marquer_a_accompagner', 'exporter_csv']
-    
-    def marquer_accompagne(self, request, queryset):
-        """Marque les élèves sélectionnés comme accompagnés"""
-        updated = queryset.update(statut='accompagne')
-        self.message_user(request, f'{updated} élève(s) marqué(s) comme accompagné(s).')
-    marquer_accompagne.short_description = "✅ Marquer comme accompagné"
-    
-    def marquer_a_accompagner(self, request, queryset):
-        """Marque les élèves sélectionnés comme à accompagner"""
-        updated = queryset.update(statut='a_accompagner')
-        self.message_user(request, f'{updated} élève(s) marqué(s) comme à accompagner.')
-    marquer_a_accompagner.short_description = "⏳ Marquer comme à accompagner"
-    
-    def exporter_csv(self, request, queryset):
-        """Exporte les élèves sélectionnés en CSV"""
-        import csv
-        from django.http import HttpResponse
-        
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="eleves_export.csv"'
-        
-        writer = csv.writer(response)
-        writer.writerow([
-            'Nom', 'Prénom', 'Téléphone élève',
-            'Nom parent', 'Prénom parent', 'Téléphone parent',
-            'Classe', 'Établissement', 'Matières souhaitées',
-            'Adresse', 'Arrondissement', 'Statut',
-            'Informations complémentaires'
-        ])
-        
-        for eleve in queryset:
-            writer.writerow([
-                eleve.nom,
-                eleve.prenom,
-                eleve.telephone,
-                eleve.nom_parent,
-                eleve.prenom_parent,
-                eleve.telephone_parent,
-                eleve.classe,
-                eleve.etablissement,
-                eleve.matieres_souhaitees,
-                eleve.adresse,
-                eleve.arrondissement,
-                eleve.get_statut_display(),
-                eleve.informations_complementaires,
-            ])
-        
-        return response
-    exporter_csv.short_description = "📥 Exporter en CSV"
-
-
 # ============================================================================
 # 🎓 ADMINISTRATION DES BÉNÉVOLES
 # ============================================================================
