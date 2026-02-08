@@ -16,12 +16,20 @@ import json
 
 def home(request):
     """Page d'accueil de l'application"""
-    context = {
+    # Récupérer quelques statistiques pour l'affichage
+    stats = {
         'total_eleves': Eleve.objects.count(),
+        'eleves_accompagnes': Eleve.objects.filter(statut='accompagne').count(),
         'total_benevoles': Benevole.objects.count(),
+        'benevoles_disponibles': Benevole.objects.filter(statut='Mentor').count(),  # ← MAJUSCULE !
         'total_binomes': Binome.objects.filter(actif=True).count(),
     }
-    return render(request, 'core/home.html', context)
+    
+    context = {
+        'stats': stats,
+        'page_title': 'ESA Manager - Accueil',
+    }
+    return render(request, 'core/index.html', context)
 
 
 # ============================================================================
@@ -29,8 +37,25 @@ def home(request):
 # ============================================================================
 
 def carte_binomes(request):
-    """Carte des binômes actifs"""
-    return render(request, 'core/carte_binomes.html')
+    """
+    Vue de la carte interactive des binômes élèves-bénévoles.
+    
+    Charge tous les binômes actifs avec leurs coordonnées GPS
+    et les affiche sur une carte Leaflet.
+    """
+    
+    # Récupérer tous les binômes actifs
+    binomes = Binome.objects.filter(actif=True).select_related('eleve', 'benevole')
+    
+    # Compter pour les stats
+    total_binomes = binomes.count()
+    
+    context = {
+        'total_binomes': total_binomes,
+        'page_title': 'Carte des Binômes',
+    }
+    
+    return render(request, 'core/carte_binomes.html', context)
 
 
 def carte_enattente(request):
@@ -43,32 +68,72 @@ def carte_enattente(request):
 # ============================================================================
 
 def api_binomes_json(request):
-    """API JSON pour les binômes"""
+    """
+    API JSON qui retourne tous les binômes actifs pour la carte.
+    
+    Format de retour :
+    {
+        "binomes": [
+            {
+                "id": 1,
+                "eleve": {
+                    "id": 5,
+                    "nom": "Dupont",
+                    "prenom": "Jean",
+                    "classe": "CE2",
+                    "latitude": 43.2965,
+                    "longitude": 5.3698
+                },
+                "benevole": {
+                    "id": 12,
+                    "nom": "Martin",
+                    "prenom": "Sophie",
+                    "latitude": 43.2617,
+                    "longitude": 5.3792
+                },
+                "date_debut": "2024-09-01",
+                "actif": true
+            },
+            ...
+        ],
+        "count": 75
+    }
+    """
+    
+    # Récupérer les binômes actifs avec les relations
     binomes = Binome.objects.filter(actif=True).select_related('eleve', 'benevole')
     
     data = []
     for binome in binomes:
-        if binome.eleve.latitude and binome.eleve.longitude:
+        # Vérifier que l'élève et le bénévole ont des coordonnées
+        if binome.eleve.latitude and binome.eleve.longitude and \
+           binome.benevole.latitude and binome.benevole.longitude:
+            
             data.append({
                 'id': binome.id,
                 'eleve': {
                     'id': binome.eleve.id,
                     'nom': binome.eleve.nom,
                     'prenom': binome.eleve.prenom,
+                    'arrondissement': binome.eleve.arrondissement,
+                    'classe': binome.eleve.classe,
                     'latitude': binome.eleve.latitude,
                     'longitude': binome.eleve.longitude,
-                    'arrondissement': binome.eleve.arrondissement,
                 },
                 'benevole': {
-                    'id': binome.benevole.id if binome.benevole else None,
-                    'nom': binome.benevole.nom if binome.benevole else '',
-                    'prenom': binome.benevole.prenom if binome.benevole else '',
-                    'latitude': binome.benevole.latitude if binome.benevole else None,
-                    'longitude': binome.benevole.longitude if binome.benevole else None,
-                } if binome.benevole else None,
+                    'id': binome.benevole.id,
+                    'nom': binome.benevole.nom,
+                    'prenom': binome.benevole.prenom,
+                    'arrondissement': binome.benevole.code_postal,
+                    'ville' : binome.benevole.ville,
+                    'latitude': binome.benevole.latitude,
+                    'longitude': binome.benevole.longitude,
+                },
+                'date_debut': binome.date_debut.isoformat() if binome.date_debut else None,
+                'actif': binome.actif,
             })
     
-    return JsonResponse(data, safe=False)
+    return JsonResponse({'binomes': data, 'count': len(data)})
 
 
 def api_eleves_json(request):

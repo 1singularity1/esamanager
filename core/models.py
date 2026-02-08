@@ -49,7 +49,8 @@ class Matiere(models.Model):
     
     ordre = models.IntegerField(
         default=0,
-        verbose_name="Ordre d'affichage"
+        verbose_name="Ordre d'affichage",
+        help_text="Pour trier les matières dans l'ordre souhaité"
     )
     
     actif = models.BooleanField(
@@ -328,23 +329,25 @@ class Eleve(models.Model):
 
 
 # ============================================================================
-# 🎓 MODÈLE BÉNÉVOLE
+# 🎓 MODÈLE BÉNÉVOLE - VERSION COMPLÈTE
 # ============================================================================
 
 class Benevole(models.Model):
     """
     Représente un bénévole de l'association ESA.
     
-    Table en base de données : core_benevole
+    Ce modèle contient toutes les informations nécessaires pour gérer
+    les bénévoles : coordonnées, disponibilités, compétences, documents, etc.
     """
     
-    # ----------------------------------------------------------------
+    # ================================================================
     # 📝 INFORMATIONS PERSONNELLES
-    # ----------------------------------------------------------------
+    # ================================================================
     
     nom = models.CharField(
         max_length=100,
-        verbose_name="Nom de famille"
+        verbose_name="Nom de famille",
+        help_text="Nom de famille du bénévole"
     )
     
     prenom = models.CharField(
@@ -361,12 +364,20 @@ class Benevole(models.Model):
     telephone = models.CharField(
         max_length=20,
         blank=True,
-        verbose_name="Téléphone"
+        verbose_name="Téléphone",
+        help_text="Numéro de téléphone"
     )
     
-    # ----------------------------------------------------------------
+    profession = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Profession",
+        help_text="Profession actuelle ou passée"
+    )
+    
+    # ================================================================
     # 📍 LOCALISATION
-    # ----------------------------------------------------------------
+    # ================================================================
     
     adresse = models.CharField(
         max_length=200,
@@ -374,10 +385,25 @@ class Benevole(models.Model):
         verbose_name="Adresse complète"
     )
     
-    arrondissement = models.CharField(
+    code_postal = models.CharField(
         max_length=10,
         blank=True,
-        verbose_name="Arrondissement"
+        verbose_name="Code postal",
+        help_text="Exemple : 13001, 13190"
+    )
+    
+    ville = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Ville",
+        help_text="Exemple : Marseille, Allauch"
+    )
+    
+    zone_geographique = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Zone géographique",
+        help_text="Zone d'intervention préférée"
     )
     
     latitude = models.FloatField(
@@ -387,7 +413,8 @@ class Benevole(models.Model):
             MinValueValidator(-90),
             MaxValueValidator(90)
         ],
-        verbose_name="Latitude"
+        verbose_name="Latitude",
+        help_text="Coordonnée GPS pour la carte"
     )
     
     longitude = models.FloatField(
@@ -397,43 +424,155 @@ class Benevole(models.Model):
             MinValueValidator(-180),
             MaxValueValidator(180)
         ],
-        verbose_name="Longitude"
+        verbose_name="Longitude",
+        help_text="Coordonnée GPS pour la carte"
     )
     
-    # ----------------------------------------------------------------
-    # 📊 DISPONIBILITÉ
-    # ----------------------------------------------------------------
+    moyen_deplacement = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Moyen de déplacement",
+        help_text="Exemple : Véhicule personnel, Transport en commun"
+    )
     
-    DISPONIBILITE_CHOICES = [
-        ('disponible', 'Disponible'),
-        ('occupe', 'Occupé'),
-        ('inactif', 'Inactif'),
+    # ================================================================
+    # 📊 STATUT
+    # ================================================================
+    
+    STATUT_CHOICES = [
+        ('Mentor', 'Mentor'),
+        ('Disponible', 'Disponible'),
+        ('Indisponible', 'Indisponible'),
     ]
     
-    disponibilite = models.CharField(
+    statut = models.CharField(
         max_length=20,
-        choices=DISPONIBILITE_CHOICES,
-        default='disponible',
-        verbose_name="Disponibilité"
+        choices=STATUT_CHOICES,
+        default='Disponible',
+        verbose_name="Statut",
+        help_text="Statut actuel du bénévole"
     )
     
-    # ----------------------------------------------------------------
-    # ⏰ MÉTADONNÉES
-    # ----------------------------------------------------------------
+    est_responsable = models.BooleanField(
+        default=False,
+        verbose_name="Est responsable",
+        help_text="Indique si la personne est responsable dans l'association"
+    )
+    
+    # ================================================================
+    # 🎓 COMPÉTENCES ET NIVEAUX D'INTERVENTION
+    # ================================================================
+    
+    # Relation ManyToMany vers le modèle Matiere
+    matieres = models.ManyToManyField(
+        Matiere,
+        blank=True,
+        verbose_name="Matières enseignées",
+        help_text="Matières que le bénévole peut enseigner (choix multiples)",
+        related_name='benevoles'
+    )
+    
+    # Niveaux d'intervention (BooleanField)
+    primaire = models.BooleanField(
+        default=False,
+        verbose_name="Primaire",
+        help_text="Peut accompagner niveau primaire"
+    )
+    
+    college = models.BooleanField(
+        default=False,
+        verbose_name="Collège",
+        help_text="Peut accompagner niveau collège"
+    )
+    
+    lycee = models.BooleanField(
+        default=False,
+        verbose_name="Lycée",
+        help_text="Peut accompagner niveau lycée"
+    )
+    
+    # ================================================================
+    # 📋 DOCUMENTS ET FORMALITÉS (tous en BooleanField)
+    # ================================================================
+    
+    a_donne_photo = models.BooleanField(
+        default=False,
+        verbose_name="A donné photo",
+        help_text="Photo fournie"
+    )
+    
+    est_ajoute_au_groupe_whatsapp = models.BooleanField(
+        default=False,
+        verbose_name="Groupe WhatsApp",
+        help_text="Ajouté au groupe WhatsApp"
+    )
+    
+    fichier = models.BooleanField(
+        default=False,
+        verbose_name="Fichier",
+        help_text="Dossier administratif complet"
+    )
+    
+    outlook = models.BooleanField(
+        default=False,
+        verbose_name="Outlook",
+        help_text="Ajouté dans Outlook"
+    )
+    
+    extranet = models.BooleanField(
+        default=False,
+        verbose_name="Extranet",
+        help_text="Accès extranet créé"
+    )
+    
+    reunion_accueil_faite = models.BooleanField(
+        default=False,
+        verbose_name="Réunion d'accueil faite",
+        help_text="A participé à la réunion d'accueil"
+    )
+    
+    volet_3_casier_judiciaire = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name="Volet 3 casier judiciaire",
+        help_text="Date de réception du volet 3 (ou laissez vide)"
+    )
+    
+    # ================================================================
+    # 💬 NOTES ET INFORMATIONS COMPLÉMENTAIRES
+    # ================================================================
+    
+    commentaires = models.TextField(
+        blank=True,
+        verbose_name="Commentaires",
+        help_text="Remarques et informations diverses"
+    )
+    
+    divers = models.TextField(
+        blank=True,
+        verbose_name="Divers",
+        help_text="Autres informations"
+    )
+    
+    # ================================================================
+    # ⏰ MÉTADONNÉES AUTOMATIQUES
+    # ================================================================
     
     date_creation = models.DateTimeField(
         auto_now_add=True,
-        verbose_name="Date d'inscription"
+        verbose_name="Date de création",
+        help_text="Date d'ajout dans le système"
     )
     
     date_modification = models.DateTimeField(
         auto_now=True,
-        verbose_name="Dernière modification"
+        verbose_name="Dernière modification",
+        help_text="Dernière mise à jour de la fiche"
     )
     
-    # ----------------------------------------------------------------
+    # ================================================================
     # 🎨 MÉTADONNÉES DU MODÈLE
-    # ----------------------------------------------------------------
+    # ================================================================
     
     class Meta:
         verbose_name = "Bénévole"
@@ -442,18 +581,91 @@ class Benevole(models.Model):
         
         indexes = [
             models.Index(fields=['nom', 'prenom']),
-            models.Index(fields=['disponibilite']),
+            models.Index(fields=['statut']),
+            models.Index(fields=['code_postal']),
         ]
     
+    # ================================================================
+    # 🔤 REPRÉSENTATION ET MÉTHODES
+    # ================================================================
+    
     def __str__(self):
+        """Représentation textuelle du bénévole."""
         return f"{self.prenom} {self.nom}"
     
     def get_nom_complet(self):
+        """Retourne le nom complet du bénévole."""
         return f"{self.prenom} {self.nom}"
     
     def est_disponible(self):
         """Vérifie si le bénévole est disponible."""
-        return self.disponibilite == 'disponible'
+        return self.statut == 'Disponible'
+    
+    def est_mentor(self):
+        """Vérifie si le bénévole est actuellement mentor."""
+        return self.statut == 'Mentor'
+    
+    def est_geolocalisé(self):
+        """Vérifie si le bénévole a des coordonnées GPS."""
+        return self.latitude is not None and self.longitude is not None
+    
+    def get_adresse_complete(self):
+        """Retourne l'adresse complète formatée."""
+        parts = [self.adresse, self.code_postal, self.ville]
+        return ', '.join([p for p in parts if p])
+    
+    def peut_accompagner_niveau(self, niveau):
+        """
+        Vérifie si le bénévole peut accompagner un niveau donné.
+        
+        Args:
+            niveau (str): 'primaire', 'college' ou 'lycee'
+        
+        Returns:
+            bool: True si le bénévole peut accompagner ce niveau
+        """
+        niveau_map = {
+            'primaire': self.primaire,
+            'college': self.college,
+            'lycee': self.lycee
+        }
+        return niveau_map.get(niveau.lower(), False)
+    
+    def get_niveaux_accompagnement(self):
+        """Retourne la liste des niveaux que le bénévole peut accompagner."""
+        niveaux = []
+        if self.primaire:
+            niveaux.append('Primaire')
+        if self.college:
+            niveaux.append('Collège')
+        if self.lycee:
+            niveaux.append('Lycée')
+        return niveaux
+    
+    def get_matieres_list(self):
+        """Retourne la liste des noms de matières enseignées."""
+        return list(self.matieres.values_list('nom', flat=True))
+    
+    def documents_complets(self):
+        """Vérifie si tous les documents administratifs sont OK."""
+        return all([
+            self.fichier,
+            self.volet_3_casier_judiciaire,
+            self.reunion_accueil_faite
+        ])
+    
+    def get_documents_manquants(self):
+        """Retourne la liste des documents manquants."""
+        manquants = []
+        if not self.fichier:
+            manquants.append('Dossier administratif')
+        if not self.volet_3_casier_judiciaire:
+            manquants.append('Volet 3 casier judiciaire')
+        if not self.reunion_accueil_faite:
+            manquants.append('Réunion d\'accueil')
+        if not self.a_donne_photo:
+            manquants.append('Photo')
+        return manquants
 
 
 # ============================================================================

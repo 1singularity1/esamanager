@@ -225,29 +225,38 @@ class EleveAdmin(admin.ModelAdmin):
 # ============================================================================
 # 🎓 ADMINISTRATION DES BÉNÉVOLES
 # ============================================================================
+"""
+Configuration de l'admin Django pour le modèle Benevole mis à jour.
+
+Cette configuration organise les champs en sections logiques et ajoute
+des filtres, recherches et actions personnalisées.
+"""
 
 @admin.register(Benevole)
 class BenevoleAdmin(admin.ModelAdmin):
-    """Configuration de l'affichage des bénévoles dans l'admin."""
+    """
+    Configuration avancée de l'interface d'administration pour les bénévoles.
+    """
+    
+    # ================================================================
+    # 📋 AFFICHAGE DE LA LISTE
+    # ================================================================
     
     list_display = [
-        'prenom',
         'nom',
-        'email',
+        'prenom',
+        'statut',
+        'ville',
         'telephone',
-        'arrondissement',
-        'disponibilite',
-        'nombre_binomes',
-        'date_creation',
+        'email',
+        'est_responsable',
+        'est_geolocalisé',
+        'date_creation'
     ]
     
-    list_display_links = ['prenom', 'nom']
-    
-    list_filter = [
-        'disponibilite',
-        'arrondissement',
-        'date_creation',
-    ]
+    # ================================================================
+    # 🔍 RECHERCHE ET FILTRES
+    # ================================================================
     
     search_fields = [
         'nom',
@@ -255,62 +264,239 @@ class BenevoleAdmin(admin.ModelAdmin):
         'email',
         'telephone',
         'adresse',
+        'ville',
+        'code_postal',
+        'profession',
+        'matieres__nom',  # Recherche dans les matières
     ]
     
-    readonly_fields = [
-        'date_creation',
-        'date_modification',
-        'nombre_binomes',
+    list_filter = [
+        'statut',
+        'est_responsable',
+        'ville',
+        'primaire',
+        'college',
+        'lycee',
+        'fichier',
+        'outlook',
+        'extranet',
+        'date_creation'
     ]
+    
+    # ================================================================
+    # 📝 ORGANISATION DU FORMULAIRE
+    # ================================================================
     
     fieldsets = (
-        ('📝 Informations personnelles', {
-            'fields': ('nom', 'prenom')
+        ('👤 Informations personnelles', {
+            'fields': (
+                ('nom', 'prenom'),
+                'profession',
+                ('email', 'telephone'),
+                'est_responsable'
+            )
         }),
-        ('📧 Contact', {
-            'fields': ('email', 'telephone')
-        }),
+        
         ('📍 Localisation', {
             'fields': (
                 'adresse',
-                'arrondissement',
+                ('code_postal', 'ville'),
+                'zone_geographique',
+                'moyen_deplacement',
                 ('latitude', 'longitude'),
             ),
+            'classes': ('collapse',)  # Section repliable
         }),
-        ('📊 Disponibilité', {
-            'fields': ('disponibilite',)
+        
+        ('📊 Statut', {
+            'fields': (
+                'statut',
+            )
         }),
+        
+        ('🎓 Compétences et niveaux', {
+            'fields': (
+                'matieres',
+                ('primaire', 'college', 'lycee'),
+            )
+        }),
+        
+        ('📋 Documents et formalités', {
+            'fields': (
+                ('a_donne_photo', 'est_ajoute_au_groupe_whatsapp'),
+                ('fichier', 'outlook', 'extranet'),
+                'reunion_accueil_faite',
+                'volet_3_casier_judiciaire',
+            ),
+            'classes': ('collapse',)
+        }),
+        
+        ('💬 Notes', {
+            'fields': (
+                'commentaires',
+                'divers',
+            ),
+            'classes': ('collapse',)
+        }),
+        
         ('⏰ Métadonnées', {
             'fields': (
                 'date_creation',
                 'date_modification',
-                'nombre_binomes',
             ),
-            'classes': ('collapse',),
+            'classes': ('collapse',)
         }),
     )
     
+    # ================================================================
+    # 🔒 CHAMPS EN LECTURE SEULE
+    # ================================================================
+    
+    readonly_fields = [
+        'date_creation',
+        'date_modification'
+    ]
+    
+    # ================================================================
+    # ⚙️ OPTIONS DIVERSES
+    # ================================================================
+    
+    # Nombre de bénévoles par page
     list_per_page = 50
     
-    # Méthode personnalisée pour afficher le nombre de binômes
-    def nombre_binomes(self, obj):
-        """Retourne le nombre de binômes actifs du bénévole."""
-        return obj.binomes.filter(actif=True).count()
-    nombre_binomes.short_description = "Nombre de binômes"
+    # Sélection par page
+    list_max_show_all = 200
     
-    # Actions personnalisées
-    actions = ['marquer_comme_disponible', 'marquer_comme_occupe']
+    # Préserver les filtres lors de la navigation
+    preserve_filters = True
     
+    # Sauvegarder en bas ET en haut du formulaire
+    save_on_top = True
+    
+    # ================================================================
+    # 🎨 MÉTHODES PERSONNALISÉES POUR L'AFFICHAGE
+    # ================================================================
+    
+    @admin.display(description='Nom complet', ordering='nom')
+    def get_nom_complet_display(self, obj):
+        """Affiche le nom complet avec icône selon le statut."""
+        icons = {
+            'Mentor': '👨‍🏫',
+            'Disponible': '✅',
+            'Indisponible': '❌'
+        }
+        icon = icons.get(obj.statut, '👤')
+        return f"{icon} {obj.get_nom_complet()}"
+    
+    @admin.display(description='Géolocalisé', boolean=True)
+    def est_geolocalisé(self, obj):
+        """Affiche si le bénévole est géolocalisé."""
+        return obj.est_geolocalisé()
+    
+    # ================================================================
+    # 🔧 ACTIONS PERSONNALISÉES
+    # ================================================================
+    
+    actions = [
+        'marquer_comme_mentor',
+        'marquer_comme_disponible',
+        'marquer_comme_indisponible',
+        'exporter_csv_complet'
+    ]
+    
+    @admin.action(description='✅ Marquer comme Mentor')
+    def marquer_comme_mentor(self, request, queryset):
+        """Action pour marquer des bénévoles comme Mentor."""
+        updated = queryset.update(statut='Mentor')
+        self.message_user(
+            request,
+            f'{updated} bénévole(s) marqué(s) comme Mentor.'
+        )
+    
+    @admin.action(description='🟢 Marquer comme Disponible')
     def marquer_comme_disponible(self, request, queryset):
-        count = queryset.update(disponibilite='disponible')
-        self.message_user(request, f'{count} bénévole(s) marqué(s) comme disponible(s).')
-    marquer_comme_disponible.short_description = "✅ Marquer comme disponible"
+        """Action pour marquer des bénévoles comme Disponible."""
+        updated = queryset.update(statut='Disponible')
+        self.message_user(
+            request,
+            f'{updated} bénévole(s) marqué(s) comme Disponible.'
+        )
     
-    def marquer_comme_occupe(self, request, queryset):
-        count = queryset.update(disponibilite='occupe')
-        self.message_user(request, f'{count} bénévole(s) marqué(s) comme occupé(s).')
-    marquer_comme_occupe.short_description = "⏳ Marquer comme occupé"
-
+    @admin.action(description='🔴 Marquer comme Indisponible')
+    def marquer_comme_indisponible(self, request, queryset):
+        """Action pour marquer des bénévoles comme Indisponible."""
+        updated = queryset.update(statut='Indisponible')
+        self.message_user(
+            request,
+            f'{updated} bénévole(s) marqué(s) comme Indisponible.'
+        )
+    
+    @admin.action(description='📥 Exporter en CSV complet')
+    def exporter_csv_complet(self, request, queryset):
+        """Exporte les bénévoles sélectionnés en CSV complet."""
+        import csv
+        from django.http import HttpResponse
+        from datetime import datetime
+        
+        # Créer la réponse HTTP
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        filename = f'benevoles_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        # Créer le writer CSV
+        writer = csv.writer(response)
+        
+        # En-têtes
+        writer.writerow([
+            'Nom', 'Prénom', 'Statut', 'Adresse', 'Code postal', 'Ville',
+            'Email', 'Téléphone', 'Est responsable',
+            'Profession', 'Matières', 'Zone géographique', 'Moyen de déplacement',
+            'Primaire', 'Collège', 'Lycée',
+            'A donné photo', 'Groupe WhatsApp',
+            'Fichier', 'Outlook', 'Extranet',
+            'Réunion accueil', 'Volet 3',
+            'Commentaires', 'Divers',
+            'Latitude', 'Longitude'
+        ])
+        
+        # Données
+        for benevole in queryset:
+            writer.writerow([
+                benevole.nom,
+                benevole.prenom,
+                benevole.statut,
+                benevole.adresse,
+                benevole.code_postal,
+                benevole.ville,
+                benevole.email,
+                benevole.telephone,
+                benevole.est_responsable,
+                benevole.profession,
+                benevole.matieres,
+                benevole.zone_geographique,
+                benevole.moyen_deplacement,
+                benevole.primaire,
+                benevole.college,
+                benevole.lycee,
+                benevole.a_donne_photo,
+                benevole.est_ajoute_au_groupe_whatsapp,
+                benevole.fichier,
+                benevole.outlook,
+                benevole.extranet,
+                benevole.reunion_accueil_faite,
+                benevole.volet_3_casier_judiciaire,
+                benevole.commentaires,
+                benevole.divers,
+                benevole.latitude,
+                benevole.longitude,
+            ])
+        
+        self.message_user(
+            request,
+            f'{queryset.count()} bénévole(s) exporté(s) en CSV.'
+        )
+        
+        return response
 
 # ============================================================================
 # 🔗 ADMINISTRATION DES BINÔMES
