@@ -8,29 +8,9 @@ Chaque attribut = une colonne de la table.
 """
 
 from django.db import models
+from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 
-
-# ============================================================================
-# 👨‍🎓 MODÈLE ÉLÈVE
-# ============================================================================
-
-"""
-🎓 MODELS.PY - Modèle Eleve mis à jour
-
-Modifications apportées :
-1. Ajout des CLASSE_CHOICES pour standardiser les classes
-2. Ajout des champs pour les parents (nom, prénom, téléphone)
-3. Ajout du téléphone de l'élève
-4. Ajout de l'établissement scolaire
-5. Ajout des matières souhaitées
-6. Ajout d'un champ informations complémentaires
-
-Usage :
-- Copier ce code dans core/models.py
-- Exécuter : python manage.py makemigrations
-- Exécuter : python manage.py migrate
-"""
 
 # ============================================================================
 # 📚 MODÈLE MATIÈRE
@@ -108,6 +88,17 @@ class Eleve(models.Model):
         ('archive', 'Archivé'),
     ]
     
+    # Ajouter ce champ (par exemple après informations_complementaires)
+    co_responsable = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='eleves_geres',
+        verbose_name="Co-responsable",
+        help_text="Utilisateur en charge de cet élève"
+    )
+
     # ========================================================================
     # 👤 INFORMATIONS PERSONNELLES
     # ========================================================================
@@ -288,6 +279,37 @@ class Eleve(models.Model):
     )
     
     # ========================================================================
+    # 👨‍👩‍👧‍👦 INFORMATIONS PARENTS - Ajouter ce champ après telephone_parent
+    # ========================================================================
+
+    email_parent = models.EmailField(
+        blank=True,
+        verbose_name="Email des parents",
+        help_text="Adresse email de contact des parents"
+    )
+
+    # ========================================================================
+    # 📍 LOCALISATION - Ajouter ce champ après adresse
+    # ========================================================================
+
+    complement_adresse = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Complément d'adresse",
+        help_text="Ex: Bâtiment A, 3ème étage, appartement 12"
+    )
+
+    # ========================================================================
+    # 📅 SUIVI - Ajouter cette section après informations_complementaires
+    # ========================================================================
+
+    date_derniere_visite = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Date de dernière visite",
+        help_text="Date de la dernière visite effectuée chez la famille"
+    )
+    # ========================================================================
     # 🎨 MÉTADONNÉES DU MODÈLE
     # ========================================================================
     
@@ -340,6 +362,17 @@ class Benevole(models.Model):
     les bénévoles : coordonnées, disponibilités, compétences, documents, etc.
     """
     
+    # Ajouter ce champ (par exemple après les informations complémentaires)
+    co_responsable = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='benevoles_geres',
+        verbose_name="Co-responsable",
+        help_text="Utilisateur en charge de ce bénévole"
+    )
+
     # ================================================================
     # 📝 INFORMATIONS PERSONNELLES
     # ================================================================
@@ -538,6 +571,40 @@ class Benevole(models.Model):
         help_text="Date de réception du volet 3 (ou laissez vide)"
     )
     
+    # ============================================================================
+    # NOUVEAUX CHAMPS À AJOUTER (spécifiques aux candidats à recontacter)
+    # ============================================================================
+    
+    origine_contact = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="Origine du contact",
+        help_text="Source du contact (JVA, site ESA, Maison des associations, etc.)"
+    )
+    
+    date_contact = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name="Date du contact",
+        help_text="Date du premier contact (format libre)"
+    )
+    
+    informations_complementaires = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Informations complémentaires",
+        help_text="Informations supplémentaires sur le candidat"
+    )
+    
+    disponibilites_competences = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Disponibilités et compétences",
+        help_text="Détails sur les disponibilités et compétences du candidat"
+    )
+    
     # ================================================================
     # 💬 NOTES ET INFORMATIONS COMPLÉMENTAIRES
     # ================================================================
@@ -596,6 +663,10 @@ class Benevole(models.Model):
     def get_nom_complet(self):
         """Retourne le nom complet du bénévole."""
         return f"{self.prenom} {self.nom}"
+    
+    def get_prenom(self):
+        """Retourne le prénom du bénévole."""
+        return self.prenom
     
     def est_disponible(self):
         """Vérifie si le bénévole est disponible."""
@@ -770,66 +841,31 @@ class Binome(models.Model):
         """Vérifie si le binôme est actif."""
         return self.actif and self.date_fin is None
 
-
-# ============================================================================
-# 🎓 NOTES D'APPRENTISSAGE
-# ============================================================================
-
-"""
-📝 Concepts clés des modèles Django :
-
-1. CHAMPS (Fields) :
-   - CharField : Texte court (max_length obligatoire)
-   - TextField : Texte long
-   - IntegerField : Nombre entier
-   - FloatField : Nombre décimal
-   - BooleanField : Vrai/Faux
-   - DateField : Date (YYYY-MM-DD)
-   - DateTimeField : Date + heure
-   - EmailField : Email (validation auto)
-
-2. OPTIONS DES CHAMPS :
-   - null=True : Peut être NULL en base de données
-   - blank=True : Peut être vide dans les formulaires
-   - default : Valeur par défaut
-   - choices : Liste de choix prédéfinis
-   - verbose_name : Label affiché
-   - help_text : Texte d'aide
-
-3. RELATIONS :
-   - ForeignKey : Relation N-1 (plusieurs binômes → 1 bénévole)
-   - OneToOneField : Relation 1-1 (1 élève → 1 binôme max)
-   - ManyToManyField : Relation N-N (pas utilisé ici)
-
-4. META :
-   - verbose_name : Nom du modèle (singulier)
-   - verbose_name_plural : Nom du modèle (pluriel)
-   - ordering : Tri par défaut
-   - indexes : Index pour accélérer les requêtes
-
-5. MÉTHODES :
-   - __str__() : Représentation texte (OBLIGATOIRE !)
-   - Méthodes personnalisées : logique métier
-
-📚 Après avoir créé/modifié un modèle :
-1. python manage.py makemigrations  → Créer la migration
-2. python manage.py migrate         → Appliquer à la BDD
-
-🔍 Utilisation dans le code :
-    # Créer
-    eleve = Eleve.objects.create(nom="Dupont", prenom="Jean")
+# Profil utilisateur lié à un bénévole
+class ProfilUtilisateur(models.Model):
+    """
+    Profil pour lier un utilisateur Django à un bénévole.
+    Chaque utilisateur EST un bénévole.
+    """
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='profil',
+        verbose_name="Utilisateur"
+    )
     
-    # Récupérer
-    eleves = Eleve.objects.all()
-    eleve = Eleve.objects.get(id=1)
+    benevole = models.OneToOneField(
+        Benevole,
+        on_delete=models.CASCADE,
+        related_name='utilisateur',
+        verbose_name="Bénévole associé",
+        help_text="Bénévole correspondant à cet utilisateur"
+    )
     
-    # Filtrer
-    accompagnes = Eleve.objects.filter(statut='accompagne')
+    class Meta:
+        verbose_name = "Profil utilisateur"
+        verbose_name_plural = "Profils utilisateurs"
     
-    # Mettre à jour
-    eleve.statut = 'accompagne'
-    eleve.save()
-    
-    # Supprimer
-    eleve.delete()
-"""
+    def __str__(self):
+        return f"{self.user.username} → {self.benevole.get_nom_complet()}"
+

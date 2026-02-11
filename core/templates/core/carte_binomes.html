@@ -8,8 +8,10 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
     #map { 
-        height: 85vh; 
-        width: 100%; 
+        height: 70vh; 
+        width: 70%;  /* 80% de largeur */
+        float: left;  /* Aligné à gauche */
+        margin-right: 10px;
         border-radius: 10px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     }
@@ -21,7 +23,7 @@
         box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         max-height: 550px;
         overflow-y: auto;
-        max-width: 300px;
+        max-width: 280px;  /* Réduit un peu pour laisser place à la sidebar */
     }
     
     .filter-control h3 {
@@ -86,6 +88,94 @@
         margin: 6px 0;
         font-size: 13px;
     }
+
+    .sidebar {
+        position: relative;
+        width: 29%;  /* 20% de largeur */
+        height: 70vh;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        overflow-y: auto;
+        z-index: 1000;
+        transition: transform 0.3s ease;
+        /* transform: translateX(100%);  Caché par défaut */
+    }
+    
+    .sidebar-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        padding: 20px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .sidebar-header h3 {
+        margin: 0;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .sidebar-content {
+        padding: 20px;
+    }
+    
+    .sidebar-section {
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .sidebar-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    
+    .sidebar-section h4 {
+        color: #0066cc;
+        margin: 0 0 15px 0;
+        font-size: 16px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .sidebar-info {
+        display: grid;
+        gap: 10px;
+    }
+    
+    .sidebar-info-item {
+        display: flex;
+        align-items: start;
+        gap: 10px;
+    }
+    
+    .sidebar-info-label {
+        font-weight: 600;
+        color: #666;
+        min-width: 110px;
+        font-size: 13px;
+    }
+    
+    .sidebar-info-value {
+        color: #333;
+        font-size: 14px;
+        flex: 1;
+    }
+    
+    .arrondissement-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+    }
 </style>
 {% endblock %}
 
@@ -103,6 +193,23 @@
 </div>
 
 <div id="map"></div>
+
+<!-- Sidebar pour afficher les détails -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h3 id="sidebar-title"></h3>
+    </div>
+    <div class="sidebar-content" id="sidebar-content">
+    <div style="padding: 40px 20px; text-align: center; color: #666;">
+        <div style="font-size: 48px; margin-bottom: 20px;">👆</div>
+        <p style="font-size: 16px; line-height: 1.6;">
+            <strong>Cliquez sur un marqueur</strong><br>
+            pour afficher les informations détaillées de l'élève ou du bénévole
+        </p>
+    </div>
+</div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -127,7 +234,7 @@ const colors = [
     '#651FFF', '#FFC400', '#64DD17', '#FF6D00', '#D500F9', '#00BFA5'
 ];
 function getCouleurArrondissement(codePostalOuArrondissement) {
-    if (!codePostalOuArrondissement) return '#666666';
+    if (!codePostalOuArrondissement) return '#aaaaaa';
     
     const str = codePostalOuArrondissement.toString();
     const match = str.match(/130(\d{2})/);
@@ -139,7 +246,7 @@ function getCouleurArrondissement(codePostalOuArrondissement) {
         }
     }
     
-    return '#666666';
+    return '#aaaaaa';
 }
 
 // ============================================================================
@@ -172,7 +279,7 @@ fetch('{% static "core/data/arrondissements.geojson" %}')
         // Créer les layers d'arrondissements
         geojson.features.forEach((feature, index) => {
             const nom = feature.properties.nom;
-            const arr = feature.properties.codes_postaux;
+            const arr = extraireNumeroArrondissement(feature.properties.codes_postaux);
             const color = colors[(arr - 1) % colors.length];
             
             const layer = L.geoJSON(feature, {
@@ -216,13 +323,12 @@ fetch('{% static "core/data/arrondissements.geojson" %}')
             const eleve = binome.eleve;
             const benevole = binome.benevole;
             
-            // Trouver l'arrondissement de l'élève
-            const eleveArrIndex = trouverArrondissement(eleve.latitude, eleve.longitude);
-            const couleurEleve = markerColors[eleveArrIndex % markerColors.length];
+            const eleveArrIndex = extraireNumeroArrondissementTexte(eleve.arrondissement);
+            const couleurEleve = markerColors[(eleveArrIndex-1) % markerColors.length];
             
             // Trouver l'arrondissement du bénévole
-            const benevoleArrIndex = trouverArrondissement(benevole.latitude, benevole.longitude);
-            const couleurBenevole = markerColors[benevoleArrIndex % markerColors.length];
+            const benevoleArrIndex = extraireNumeroArrondissement(benevole.arrondissement);
+            const couleurBenevole = markerColors[(benevoleArrIndex-1) % markerColors.length];
             
             // Ligne de connexion
             const polyline = L.polyline(
@@ -230,7 +336,7 @@ fetch('{% static "core/data/arrondissements.geojson" %}')
                 {
                     color: '#000000',
                     weight: 2,
-                    opacity: 0.6,
+                    opacity: 0.9,
                     dashArray: '5, 5'
                 }
             ).addTo(map);
@@ -239,36 +345,63 @@ fetch('{% static "core/data/arrondissements.geojson" %}')
             const markerEleve = L.circleMarker([eleve.latitude, eleve.longitude], {
                 radius: 8,
                 fillColor: couleurEleve,
-                color: '#fff',
+                color: '#000000',
                 weight: 2,
                 opacity: 1,
-                fillOpacity: 0.9
+                fillOpacity: 0.9,
+                pane: 'markerPane'
             }).addTo(map);
             
-            markerEleve.bindPopup(`
-                <div class="info-popup">
-                    <h4>👨‍🎓 ${eleve.prenom} ${eleve.nom}</h4>
-                    <p><strong>Classe:</strong> ${eleve.classe}</p>
-                    <p><strong>Bénévole:</strong> ${benevole.prenom} ${benevole.nom}</p>
-                </div>
-            `);
+            // Marqueur élève - Remplace le bindPopup par un click
+            markerEleve.on('click', function(e) {
+                L.DomEvent.stopPropagation(e);  // ← Ajoute cette ligne
+                console.log('Click élève:', eleve.prenom);  // ← Pour déboguer
+                showSidebarEleve(eleve, benevole, couleurEleve);
+            });
+
+            // markerEleve.bindPopup(`
+            //     <div class="info-popup">
+            //         <h4>👨‍🎓 ${eleve.prenom} ${eleve.nom}</h4>
+            //         <p><strong>Classe:</strong> ${eleve.classe}</p>
+            //         <p><strong>Code postal:</strong> ${eleve.arrondissement}</p>
+            //         <p><strong>Bénévole:</strong> ${benevole.prenom} ${benevole.nom}</p>
+            //     </div>
+            // `);
             
+            // Marqueur bénévole - CARRÉ coloré (Candidat/Disponible)
+            const squareIcon = L.divIcon({
+                className: 'square-marker',
+                html: `<div style="
+                    width: 16px; 
+                    height: 16px; 
+                    background-color: ${couleurBenevole}; 
+                    border: 2px solid #000000;
+                    transform: translate(-8px, -8px);
+                    opacity: 0.9;
+                "></div>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
             // Marqueur bénévole
-            const markerBenevole = L.circleMarker([benevole.latitude, benevole.longitude], {
-                radius: 8,
-                fillColor: couleurBenevole,
-                color: '#fff',
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.9
+            const markerBenevole = L.marker([benevole.latitude, benevole.longitude], {
+                icon: squareIcon,
+                pane: 'markerPane'
             }).addTo(map);
             
-            markerBenevole.bindPopup(`
-                <div class="info-popup">
-                    <h4>🎓 ${benevole.prenom} ${benevole.nom}</h4>
-                    <p><strong>Élève:</strong> ${eleve.prenom} ${eleve.nom}</p>
-                </div>
-            `);
+             // Marqueur bénévole - Remplace le bindPopup par un click
+            markerBenevole.on('click', function(e) {
+                L.DomEvent.stopPropagation(e);  // ← Ajoute cette ligne
+                console.log('Click bénévole:', benevole.prenom);  // ← Pour déboguer
+                showSidebarBenevole(benevole, eleve, couleurBenevole);
+            });
+            
+            // markerBenevole.bindPopup(`
+            //     <div class="info-popup">
+            //         <h4>🎓 ${benevole.prenom} ${benevole.nom}</h4>
+            //         <p><strong>Code postal:</strong> ${benevole.arrondissement}</p>
+            //         <p><strong>Élève:</strong> ${eleve.prenom} ${eleve.nom}</p>
+            //     </div>
+            // `);
             
             // Stocker le binôme
             binomeLayers.push({
@@ -298,34 +431,35 @@ fetch('{% static "core/data/arrondissements.geojson" %}')
 // 🔍 FONCTIONS UTILITAIRES
 // ============================================================================
 
-function trouverArrondissement(lat, lon) {
-    if (!geojsonData || !lat || !lon) return 0;
+function extraireNumeroArrondissement(codePostal) {
+    // codePostal = 13007 (string ou number)
+    const str = codePostal.toString();  // "13007"
+    const match = str.match(/130(\d{2})/);  // Cherche "130" suivi de 2 chiffres
+    // match[1] = "07"
     
-    const point = turf.point([lon, lat]);
-    
-    for (let i = 0; i < geojsonData.features.length; i++) {
-        const feature = geojsonData.features[i];
-        const polygon = turf.polygon(feature.geometry.coordinates);
-        
-        if (turf.booleanPointInPolygon(point, polygon)) {
-            return i;
-        }
+    if (match) {
+        return parseInt(match[1], 10);  // Convertit "07" en 7
     }
     
-    // Si pas trouvé, trouver le plus proche
-    let minDist = Infinity;
-    let closest = 0;
+    return 0;  // Si pas trouvé
+}
+
+/**
+ * Extrait le numéro d'arrondissement du format "1er", "2e", "3e"...
+ * Utilisé pour les ÉLÈVES
+ */
+function extraireNumeroArrondissementTexte(arrondissementTexte) {
+    if (!arrondissementTexte) return 0;
     
-    geojsonData.features.forEach((feature, idx) => {
-        const centroid = turf.centroid(feature);
-        const dist = turf.distance(point, centroid, { units: 'kilometers' });
-        if (dist < minDist) {
-            minDist = dist;
-            closest = idx;
-        }
-    });
+    const str = arrondissementTexte.toString();
+    // Cherche un ou plusieurs chiffres au début : "1er" -> "1", "16e" -> "16"
+    const match = str.match(/^(\d+)/);
     
-    return closest;
+    if (match) {
+        return parseInt(match[1], 10);
+    }
+    
+    return 0;
 }
 
 function updateBinomeVisibility() {
@@ -359,7 +493,7 @@ function creerControleFiltre() {
         
         geojsonData.features.forEach((feature, index) => {
             const nom = feature.properties.nom;
-            const arr = feature.properties.arrondissement;
+            const arr = extraireNumeroArrondissement(feature.properties.codes_postaux);
             const color = markerColors[(arr - 1) % markerColors.length];
             
             div.innerHTML += `
@@ -385,5 +519,116 @@ window.toggleArrondissement = function(index) {
     arrondissementVisibility[index] = checkbox.checked;
     updateBinomeVisibility();
 };
+
+// ============================================================================
+// 📋 GESTION DE LA SIDEBAR
+// ============================================================================
+
+/**
+ * Affiche la sidebar avec les détails d'un élève
+ */
+function showSidebarEleve(eleve, benevole, couleur) {
+    const sidebar = document.getElementById('sidebar');
+    const title = document.getElementById('sidebar-title');
+    const content = document.getElementById('sidebar-content');
+    
+    title.innerHTML = `👨‍🎓 Élève`;
+    
+    content.innerHTML = `
+        <div class="sidebar-section">
+            <h4>👤 Informations personnelles</h4>
+            <div class="sidebar-info">
+                <div class="sidebar-info-item">
+                    <span class="sidebar-info-label">Nom complet</span>
+                    <span class="sidebar-info-value"><strong>${eleve.prenom} ${eleve.nom}</strong></span>
+                </div>
+                <div class="sidebar-info-item">
+                    <span class="sidebar-info-label">Classe</span>
+                    <span class="sidebar-info-value">${eleve.classe || 'Non renseignée'}</span>
+                </div>
+                <div class="sidebar-info-item">
+                    <span class="sidebar-info-label">Arrondissement</span>
+                    <span class="sidebar-info-value">
+                        <span class="arrondissement-badge" style="background-color: ${couleur};">
+                            ${eleve.arrondissement}
+                        </span>
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="sidebar-section">
+            <h4>🎓 Bénévole associé</h4>
+            <div class="sidebar-info">
+                <div class="sidebar-info-item">
+                    <span class="sidebar-info-label">Nom</span>
+                    <span class="sidebar-info-value">${benevole.prenom} ${benevole.nom}</span>
+                </div>
+                <div class="sidebar-info-item">
+                    <span class="sidebar-info-label">Code postal</span>
+                    <span class="sidebar-info-value">${benevole.code_postal}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Affiche la sidebar avec les détails d'un bénévole
+ */
+function showSidebarBenevole(benevole, eleve, couleur) {
+    const sidebar = document.getElementById('sidebar');
+    const title = document.getElementById('sidebar-title');
+    const content = document.getElementById('sidebar-content');
+    
+    title.innerHTML = `🎓 Bénévole`;
+    
+    content.innerHTML = `
+        <div class="sidebar-section">
+            <h4>👤 Informations personnelles</h4>
+            <div class="sidebar-info">
+                <div class="sidebar-info-item">
+                    <span class="sidebar-info-label">Nom complet</span>
+                    <span class="sidebar-info-value"><strong>${benevole.prenom} ${benevole.nom}</strong></span>
+                </div>
+                <div class="sidebar-info-item">
+                    <span class="sidebar-info-label">Code postal</span>
+                    <span class="sidebar-info-value">
+                        <span class="arrondissement-badge" style="background-color: ${couleur};">
+                            ${benevole.code_postal}
+                        </span>
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="sidebar-section">
+            <h4>👨‍🎓 Élève accompagné</h4>
+            <div class="sidebar-info">
+                <div class="sidebar-info-item">
+                    <span class="sidebar-info-label">Nom</span>
+                    <span class="sidebar-info-value">${eleve.prenom} ${eleve.nom}</span>
+                </div>
+                <div class="sidebar-info-item">
+                    <span class="sidebar-info-label">Classe</span>
+                    <span class="sidebar-info-value">${eleve.classe || 'Non renseignée'}</span>
+                </div>
+                <div class="sidebar-info-item">
+                    <span class="sidebar-info-label">Arrondissement</span>
+                    <span class="sidebar-info-value">${eleve.arrondissement}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Fermer la sidebar en cliquant sur la carte
+map.on('click', function(e) {
+    // Ne fermer que si on clique sur la carte, pas sur un marqueur
+    if (e.originalEvent.target.classList.contains('leaflet-container') || 
+        e.originalEvent.target.tagName === 'path') {
+        closeSidebar();
+    }
+});
 </script>
 {% endblock %}

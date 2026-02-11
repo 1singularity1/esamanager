@@ -20,6 +20,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         
         matieres_data = [
+            # Matières principales
             {'nom': 'Français', 'ordre': 1},
             {'nom': 'Mathématiques', 'ordre': 2},
             {'nom': 'Anglais', 'ordre': 3},
@@ -30,8 +31,26 @@ class Command(BaseCommand):
             {'nom': 'Physique-Chimie', 'ordre': 8},
             {'nom': 'Philosophie', 'ordre': 9},
             {'nom': 'Économie', 'ordre': 10},
-            {'nom': 'Aide aux devoirs (toutes matières)', 'ordre': 11},
-            {'nom': 'Méthodologie', 'ordre': 12},
+            
+            # Compétences de base (primaire surtout)
+            {'nom': 'Lecture', 'ordre': 20},
+            {'nom': 'Écriture', 'ordre': 21},
+            {'nom': 'Compréhension', 'ordre': 22},
+            {'nom': 'Orthographe', 'ordre': 23},
+            {'nom': 'Calcul', 'ordre': 24},
+            {'nom': 'Conjugaison', 'ordre': 25},
+            {'nom': 'Grammaire', 'ordre': 26},
+            
+            # Compétences transversales
+            {'nom': 'Méthodologie', 'ordre': 30},
+            {'nom': 'Concentration', 'ordre': 31},
+            {'nom': 'Organisation', 'ordre': 32},
+            {'nom': 'Compréhension des consignes', 'ordre': 33},
+            {'nom': 'Mémoire', 'ordre': 34},
+            {'nom': 'Orientation', 'ordre': 35},
+            
+            # Général
+            {'nom': 'Aide aux devoirs (toutes matières)', 'ordre': 90},
             {'nom': 'Autre', 'ordre': 99},
         ]
         

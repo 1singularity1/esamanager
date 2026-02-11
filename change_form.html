@@ -1,4 +1,4 @@
-<!-- 💾 Template admin personnalisé avec autosave + INDICATEUR PERMANENT -->
+<!-- 💾 Template admin personnalisé avec autosave - VERSION FINALE CORRIGÉE -->
 
 {% extends "admin/change_form.html" %}
 {% load static %}
@@ -7,53 +7,24 @@
 {{ block.super }}
 
 <style>
-    /* Indicateur permanent en haut à droite */
-    #autosave-indicator {
-        position: fixed;
-        top: 32px;
-        right: 20px;
-        padding: 8px 15px;
-        background: white;
-        border: 2px solid #ddd;
-        border-radius: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        z-index: 9999;
-        font-size: 13px;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: #000000;
-    }
-    
-    #autosave-indicator.saved {
-        border-color: #4CAF50;
-        background: #f1f8f4;
-    }
-    
-    #autosave-indicator.saving {
-        border-color: #FF9800;
-        background: #fff8f0;
-    }
-    
-    #autosave-indicator.error {
-        border-color: #F44336;
-        background: #fef5f5;
-    }
-    
-    /* Message temporaire en bas (pour erreurs) */
     #autosave-status {
         position: fixed;
         bottom: 20px;
         right: 20px;
         padding: 10px 20px;
-        background: #F44336;
+        background: #4CAF50;
         color: white;
         border-radius: 5px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         display: none;
         z-index: 9999;
         font-size: 14px;
+    }
+    #autosave-status.saving {
+        background: #FF9800;
+    }
+    #autosave-status.error {
+        background: #F44336;
     }
 </style>
 
@@ -62,14 +33,12 @@
     console.log('🚀 Script autosave chargé');
     
     // Configuration
-    const AUTOSAVE_INTERVAL = 5000; // 5 secondes
+    const AUTOSAVE_INTERVAL = 30000; // 30 secondes
     
     let autosaveTimer = null;
     let isDirty = false;
     let eleveId = null;
     let CSRF_TOKEN = null;
-    let lastSaveTime = null;
-    let timeUpdateInterval = null;
     
     // Récupérer l'ID de l'élève depuis l'URL
     const urlParts = window.location.pathname.split('/');
@@ -81,37 +50,9 @@
         console.log('📋 Nouvel élève (pas d\'ID)');
     }
     
-    // Créer l'indicateur permanent
-    function createIndicator() {
-        const indicator = document.createElement('div');
-        indicator.id = 'autosave-indicator';
-        indicator.innerHTML = '<span class="status-icon">⚪</span><span class="status-text">En attente de saisie</span>';
-        document.body.appendChild(indicator);
-    }
-    
-    // Mettre à jour l'indicateur
-    function updateIndicator(status, message, icon) {
-        const indicator = document.getElementById('autosave-indicator');
-        if (!indicator) return;
-        
-        indicator.className = status;
-        indicator.querySelector('.status-icon').textContent = icon;
-        indicator.querySelector('.status-text').textContent = message;
-    }
-    
-    // Mettre à jour le temps écoulé
-    function updateTimeElapsed() {
-        if (!lastSaveTime) return;
-        
-        const elapsed = Math.floor((Date.now() - lastSaveTime) / 1000);
-        let timeText = elapsed < 60 ? `il y a ${elapsed}s` : `il y a ${Math.floor(elapsed / 60)}min`;
-        
-        updateIndicator('saved', `Sauvegardé ${timeText}`, '🟢');
-    }
-    
-    // Fonction pour afficher le statut (erreurs uniquement)
-    function showStatus(message, type) {
-        if (type !== 'error') return;
+    // Fonction pour afficher le statut
+    function showStatus(message, type = 'success') {
+        console.log('💬 Status:', message, '(type:', type + ')');
         
         let statusDiv = document.getElementById('autosave-status');
         if (!statusDiv) {
@@ -121,11 +62,14 @@
         }
         
         statusDiv.textContent = message;
+        statusDiv.className = type;
         statusDiv.style.display = 'block';
         
-        setTimeout(function() {
-            statusDiv.style.display = 'none';
-        }, 5000);
+        if (type === 'success') {
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
     }
     
     // Fonction pour collecter les données du formulaire
@@ -151,27 +95,34 @@
             informations_complementaires: document.getElementById('id_informations_complementaires')?.value || '',
         };
         
+        console.log('📦 Données collectées:', data);
         return data;
     }
     
     // Fonction de sauvegarde automatique
     async function autosave() {
+        console.log('💾 Tentative de sauvegarde...');
+        console.log('   - isDirty:', isDirty);
+        console.log('   - CSRF_TOKEN:', CSRF_TOKEN ? 'présent' : 'MANQUANT');
+        
         if (!isDirty) {
-            console.log('⏭️  Pas de modifications');
+            console.log('⏭️  Pas de modifications, pas de sauvegarde');
             return;
         }
         
         if (!CSRF_TOKEN) {
             console.error('❌ Token CSRF non disponible');
-            updateIndicator('error', 'Erreur: Token CSRF manquant', '🔴');
             return;
         }
         
-        updateIndicator('saving', 'Sauvegarde en cours...', '🟡');
+        showStatus('Sauvegarde en cours...', 'saving');
         
         const data = getFormData();
         
         try {
+            // ⚠️ URL CORRIGÉE : /autosave/eleve/ au lieu de /admin/autosave/eleve/
+            console.log('📤 Envoi de la requête POST vers /autosave/eleve/');
+            
             const response = await fetch('/autosave/eleve/', {
                 method: 'POST',
                 headers: {
@@ -181,85 +132,96 @@
                 body: JSON.stringify(data),
             });
             
+            console.log('📥 Réponse reçue, status:', response.status);
+            
             const result = await response.json();
+            console.log('📋 Résultat:', result);
             
             if (result.success) {
+                // Si c'était une nouvelle création, mettre à jour l'ID
                 if (!eleveId && result.id) {
                     eleveId = result.id;
-                    const newUrl = window.location.pathname.replace('/add/', '/' + result.id + '/change/');
+                    console.log('🆔 Nouvel ID attribué:', eleveId);
+                    
+                    // Mettre à jour l'URL sans recharger la page
+                    const newUrl = window.location.pathname.replace('/add/', `/${result.id}/change/`);
                     window.history.replaceState({}, '', newUrl);
+                    console.log('🔗 URL mise à jour:', newUrl);
                 }
                 
-                lastSaveTime = Date.now();
-                updateIndicator('saved', 'Sauvegardé à l\'instant', '🟢');
-                
-                if (timeUpdateInterval) clearInterval(timeUpdateInterval);
-                timeUpdateInterval = setInterval(updateTimeElapsed, 1000);
-                
+                const now = new Date().toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                showStatus(`✓ Brouillon sauvegardé à ${now}`, 'success');
                 isDirty = false;
                 console.log('✅ Sauvegarde réussie !');
             } else {
-                console.error('❌ Erreur:', result.error);
-                updateIndicator('error', 'Erreur de sauvegarde', '🔴');
-                showStatus('✗ Erreur: ' + result.error, 'error');
+                console.error('❌ Erreur de sauvegarde:', result.error);
+                showStatus('✗ Erreur de sauvegarde: ' + result.error, 'error');
             }
         } catch (error) {
-            console.error('❌ Erreur:', error);
-            updateIndicator('error', 'Erreur de connexion', '🔴');
+            console.error('❌ Erreur autosave:', error);
             showStatus('✗ Erreur de connexion', 'error');
         }
     }
     
     // Marquer le formulaire comme modifié
     function markDirty(event) {
-        console.log('✏️  Modifié:', event?.target?.id || event?.target?.name);
-        
-        if (!isDirty) {
-            isDirty = true;
-            updateIndicator('', 'Modifications non sauvegardées', '🟡');
-        }
+        console.log('✏️  Formulaire modifié par:', event?.target?.id || event?.target?.name || 'inconnu');
+        isDirty = true;
     }
     
     // Démarrer l'autosave
     function startAutosave() {
-        console.log('⏰ Démarrage autosave (5 secondes)');
+        console.log('⏰ Démarrage de l\'autosave...');
+        
+        // Sauvegarder immédiatement
+        console.log('⏱️  Première sauvegarde programmée dans 2 secondes');
         setTimeout(autosave, 2000);
+        
+        // Puis toutes les 30 secondes
         autosaveTimer = setInterval(autosave, AUTOSAVE_INTERVAL);
+        
+        console.log('✅ Autosave activé (toutes les 30 secondes)');
     }
     
     // Arrêter l'autosave
     function stopAutosave() {
-        if (autosaveTimer) clearInterval(autosaveTimer);
-        if (timeUpdateInterval) clearInterval(timeUpdateInterval);
+        if (autosaveTimer) {
+            clearInterval(autosaveTimer);
+            console.log('🛑 Autosave désactivé');
+        }
     }
     
     // Attacher les listeners à un champ
     function attachListeners(field) {
         if (!field) return;
         
-        ['input', 'change', 'keyup', 'blur'].forEach(function(eventType) {
+        ['input', 'change', 'keyup', 'blur'].forEach(eventType => {
             field.addEventListener(eventType, markDirty);
         });
+        
+        console.log('   ✓ Listeners attachés à:', field.id || field.name);
     }
     
-    // Initialisation
+    // Intercepter le submit normal pour marquer comme "complet"
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('📄 DOM chargé');
+        console.log('📄 DOM chargé, initialisation...');
         
-        createIndicator();
-        
+        // Récupérer le token CSRF
         const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
         if (csrfInput) {
             CSRF_TOKEN = csrfInput.value;
             console.log('✅ Token CSRF récupéré');
         } else {
-            console.error('❌ Token CSRF introuvable');
-            updateIndicator('error', 'Erreur: Token CSRF manquant', '🔴');
+            console.error('❌ Token CSRF introuvable dans le formulaire');
             showStatus('✗ Erreur: Token CSRF manquant', 'error');
             return;
         }
         
-        console.log('👂 Attachement listeners...');
+        // Attacher les listeners à TOUS les champs individuellement
+        console.log('👂 Attachement des listeners aux champs...');
         
         const fieldIds = [
             'id_nom', 'id_prenom', 'id_telephone',
@@ -271,7 +233,7 @@
         ];
         
         let fieldsFound = 0;
-        fieldIds.forEach(function(fieldId) {
+        fieldIds.forEach(fieldId => {
             const field = document.getElementById(fieldId);
             if (field) {
                 attachListeners(field);
@@ -279,18 +241,20 @@
             }
         });
         
-        console.log('✅ ' + fieldsFound + ' champs trouvés sur ' + fieldIds.length);
+        console.log(`✅ ${fieldsFound} champs trouvés sur ${fieldIds.length}`);
         
+        // Aussi écouter TOUS les inputs, textareas et selects du formulaire
         const form = document.querySelector('form');
         if (form) {
-            console.log('📋 Formulaire trouvé');
+            console.log('📋 Formulaire trouvé, ajout de listeners globaux...');
             
             const allInputs = form.querySelectorAll('input, textarea, select');
-            console.log('   ' + allInputs.length + ' éléments');
+            console.log(`   Found ${allInputs.length} input elements`);
             
-            allInputs.forEach(function(input) {
+            allInputs.forEach(input => {
+                // Éviter les champs cachés et les boutons
                 if (input.type !== 'hidden' && input.type !== 'submit' && input.type !== 'button') {
-                    ['input', 'change', 'keyup'].forEach(function(eventType) {
+                    ['input', 'change', 'keyup'].forEach(eventType => {
                         input.addEventListener(eventType, markDirty);
                     });
                 }
@@ -298,12 +262,13 @@
             
             console.log('✅ Listeners globaux attachés');
             
+            // Intercepter la soumission du formulaire
             form.addEventListener('submit', async function(e) {
-                console.log('📤 Soumission formulaire');
-                updateIndicator('saving', 'Validation...', '🟡');
+                console.log('📤 Soumission du formulaire');
                 
                 if (eleveId) {
                     try {
+                        // ⚠️ URL CORRIGÉE : /validate/eleve/ au lieu de /admin/validate/eleve/
                         await fetch('/validate/eleve/', {
                             method: 'POST',
                             headers: {
@@ -322,11 +287,17 @@
             console.error('❌ Formulaire non trouvé !');
         }
         
+        // Démarrer l'autosave
         startAutosave();
         
+        // Arrêter l'autosave quand on quitte la page
         window.addEventListener('beforeunload', function() {
+            console.log('👋 Page en cours de fermeture');
             stopAutosave();
-            if (isDirty) autosave();
+            if (isDirty) {
+                console.log('💾 Dernière sauvegarde avant fermeture');
+                autosave();
+            }
         });
         
         console.log('🎉 Initialisation terminée !');

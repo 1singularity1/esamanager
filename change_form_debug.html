@@ -1,8 +1,4 @@
-<!-- 💾 Template admin personnalisé avec autosave -->
-
-<!--
-Créer ce fichier dans : core/templates/admin/core/eleve/change_form.html
--->
+<!-- 💾 Template admin personnalisé avec autosave - VERSION DEBUG -->
 
 {% extends "admin/change_form.html" %}
 {% load static %}
@@ -34,23 +30,30 @@ Créer ce fichier dans : core/templates/admin/core/eleve/change_form.html
 
 <script>
 (function() {
+    console.log('🚀 Script autosave chargé');
+    
     // Configuration
     const AUTOSAVE_INTERVAL = 30000; // 30 secondes
-    const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
     
     let autosaveTimer = null;
     let isDirty = false;
     let eleveId = null;
+    let CSRF_TOKEN = null;
     
     // Récupérer l'ID de l'élève depuis l'URL
     const urlParts = window.location.pathname.split('/');
     const changeIndex = urlParts.indexOf('change');
     if (changeIndex > 0 && urlParts[changeIndex - 1]) {
         eleveId = urlParts[changeIndex - 1];
+        console.log('📋 ID élève trouvé:', eleveId);
+    } else {
+        console.log('📋 Nouvel élève (pas d\'ID)');
     }
     
     // Fonction pour afficher le statut
     function showStatus(message, type = 'success') {
+        console.log('💬 Status:', message, '(type:', type + ')');
+        
         const statusDiv = document.getElementById('autosave-status');
         if (!statusDiv) {
             const div = document.createElement('div');
@@ -93,13 +96,23 @@ Créer ce fichier dans : core/templates/admin/core/eleve/change_form.html
             informations_complementaires: document.getElementById('id_informations_complementaires')?.value || '',
         };
         
+        console.log('📦 Données collectées:', data);
         return data;
     }
     
     // Fonction de sauvegarde automatique
     async function autosave() {
+        console.log('💾 Tentative de sauvegarde...');
+        console.log('   - isDirty:', isDirty);
+        console.log('   - CSRF_TOKEN:', CSRF_TOKEN ? 'présent' : 'MANQUANT');
+        
         if (!isDirty) {
-            console.log('Pas de modifications, pas de sauvegarde');
+            console.log('⏭️  Pas de modifications, pas de sauvegarde');
+            return;
+        }
+        
+        if (!CSRF_TOKEN) {
+            console.error('❌ Token CSRF non disponible');
             return;
         }
         
@@ -108,6 +121,8 @@ Créer ce fichier dans : core/templates/admin/core/eleve/change_form.html
         const data = getFormData();
         
         try {
+            console.log('📤 Envoi de la requête POST vers /admin/autosave/eleve/');
+            
             const response = await fetch('/admin/autosave/eleve/', {
                 method: 'POST',
                 headers: {
@@ -117,15 +132,21 @@ Créer ce fichier dans : core/templates/admin/core/eleve/change_form.html
                 body: JSON.stringify(data),
             });
             
+            console.log('📥 Réponse reçue, status:', response.status);
+            
             const result = await response.json();
+            console.log('📋 Résultat:', result);
             
             if (result.success) {
                 // Si c'était une nouvelle création, mettre à jour l'ID
                 if (!eleveId && result.id) {
                     eleveId = result.id;
+                    console.log('🆔 Nouvel ID attribué:', eleveId);
+                    
                     // Mettre à jour l'URL sans recharger la page
                     const newUrl = window.location.pathname.replace('/add/', `/${result.id}/change/`);
                     window.history.replaceState({}, '', newUrl);
+                    console.log('🔗 URL mise à jour:', newUrl);
                 }
                 
                 const now = new Date().toLocaleTimeString('fr-FR', {
@@ -134,54 +155,84 @@ Créer ce fichier dans : core/templates/admin/core/eleve/change_form.html
                 });
                 showStatus(`✓ Brouillon sauvegardé à ${now}`, 'success');
                 isDirty = false;
+                console.log('✅ Sauvegarde réussie !');
             } else {
+                console.error('❌ Erreur de sauvegarde:', result.error);
                 showStatus('✗ Erreur de sauvegarde: ' + result.error, 'error');
             }
         } catch (error) {
-            console.error('Erreur autosave:', error);
+            console.error('❌ Erreur autosave:', error);
             showStatus('✗ Erreur de connexion', 'error');
         }
     }
     
     // Marquer le formulaire comme modifié
     function markDirty() {
+        console.log('✏️  Formulaire modifié (isDirty = true)');
         isDirty = true;
     }
     
     // Démarrer l'autosave
     function startAutosave() {
+        console.log('⏰ Démarrage de l\'autosave...');
+        
         // Sauvegarder immédiatement
-        setTimeout(autosave, 2000); // Première sauvegarde après 2 secondes
+        console.log('⏱️  Première sauvegarde programmée dans 2 secondes');
+        setTimeout(autosave, 2000);
         
         // Puis toutes les 30 secondes
         autosaveTimer = setInterval(autosave, AUTOSAVE_INTERVAL);
         
-        console.log('Autosave activé (toutes les 30 secondes)');
+        console.log('✅ Autosave activé (toutes les 30 secondes)');
     }
     
     // Arrêter l'autosave
     function stopAutosave() {
         if (autosaveTimer) {
             clearInterval(autosaveTimer);
-            console.log('Autosave désactivé');
+            console.log('🛑 Autosave désactivé');
         }
     }
     
     // Intercepter le submit normal pour marquer comme "complet"
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('📄 DOM chargé, initialisation...');
+        
+        // Récupérer le token CSRF
+        const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfInput) {
+            CSRF_TOKEN = csrfInput.value;
+            console.log('✅ Token CSRF récupéré');
+        } else {
+            console.error('❌ Token CSRF introuvable dans le formulaire');
+            showStatus('✗ Erreur: Token CSRF manquant', 'error');
+            return;
+        }
+        
         const form = document.querySelector('#eleve_form, form[method="post"]');
+        console.log('📋 Formulaire trouvé:', form ? 'OUI' : 'NON');
         
         if (form) {
             // Écouter tous les changements de champs
-            form.addEventListener('change', markDirty);
-            form.addEventListener('input', markDirty);
+            form.addEventListener('change', function(e) {
+                console.log('🔄 Événement CHANGE sur:', e.target.id || e.target.name);
+                markDirty();
+            });
+            
+            form.addEventListener('input', function(e) {
+                console.log('⌨️  Événement INPUT sur:', e.target.id || e.target.name);
+                markDirty();
+            });
+            
+            console.log('👂 Listeners ajoutés sur le formulaire');
             
             // Démarrer l'autosave
             startAutosave();
             
             // Intercepter la soumission du formulaire
             form.addEventListener('submit', async function(e) {
-                // Ne pas empêcher la soumission, juste marquer comme complet
+                console.log('📤 Soumission du formulaire');
+                
                 if (eleveId) {
                     try {
                         await fetch('/admin/validate/eleve/', {
@@ -192,20 +243,27 @@ Créer ce fichier dans : core/templates/admin/core/eleve/change_form.html
                             },
                             body: JSON.stringify({ id: eleveId }),
                         });
+                        console.log('✅ Validation envoyée');
                     } catch (error) {
-                        console.error('Erreur validation:', error);
+                        console.error('❌ Erreur validation:', error);
                     }
                 }
             });
+        } else {
+            console.error('❌ Formulaire non trouvé !');
         }
         
         // Arrêter l'autosave quand on quitte la page
         window.addEventListener('beforeunload', function() {
+            console.log('👋 Page en cours de fermeture');
             stopAutosave();
             if (isDirty) {
-                autosave(); // Dernière sauvegarde
+                console.log('💾 Dernière sauvegarde avant fermeture');
+                autosave();
             }
         });
+        
+        console.log('🎉 Initialisation terminée !');
     });
 })();
 </script>

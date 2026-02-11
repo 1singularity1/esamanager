@@ -46,7 +46,7 @@ def carte_binomes(request):
     
     # Récupérer tous les binômes actifs
     binomes = Binome.objects.filter(actif=True).select_related('eleve', 'benevole')
-    
+    benevoles_disponibles = Benevole.objects.filter(statut='Mentor').count(),
     # Compter pour les stats
     total_binomes = binomes.count()
     
@@ -60,7 +60,17 @@ def carte_binomes(request):
 
 def carte_enattente(request):
     """Carte des élèves en attente"""
-    return render(request, 'core/carte_enattente.html')
+     # Récupérer tous les binômes actifs
+    binomes = Binome.objects.filter(actif=True).select_related('eleve', 'benevole')
+    
+    # Compter pour les stats
+    total_binomes = binomes.count()
+    
+    context = {
+        'total_binomes': total_binomes,
+        'page_title': 'Carte des élèves en attente & des bénévoles candidat',
+    }
+    return render(request, 'core/carte_enattente.html', context)
 
 
 # ============================================================================

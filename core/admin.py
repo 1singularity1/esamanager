@@ -8,14 +8,21 @@ Ici, on personnalise comment nos modèles apparaissent dans l'admin.
 """
 
 from django.contrib import admin
-from .models import Matiere, Eleve, Benevole, Binome
+from .models import Matiere, Eleve, Benevole, Binome, ProfilUtilisateur
 from .forms import EleveAdminForm, BenevoleAdminForm
+from django.utils.html import format_html
+from django.contrib.auth.models import User
 
 
 # ============================================================================
-# 👨‍🎓 ADMINISTRATION DES ÉLÈVES
+# Admin pour le profil utilisateur
 # ============================================================================
-
+@admin.register(ProfilUtilisateur)
+class ProfilUtilisateurAdmin(admin.ModelAdmin):
+    list_display = ['user', 'benevole']
+    list_filter = ['benevole']
+    search_fields = ['user__username', 'benevole__nom', 'benevole__prenom']
+    
 # ============================================================================
 # 📚 ADMIN MATIÈRES
 # ============================================================================
@@ -47,14 +54,12 @@ class EleveAdmin(admin.ModelAdmin):
     list_display = [
         'prenom',
         'nom',
+        'coresponsable_vignette',
+        'statut_colore',
         'classe',
-        'etablissement',
-        'statut',
         'statut_saisie',
-        'afficher_matieres',
         'telephone_parent',
-        'arrondissement',
-        'est_geolocalisé',
+        'code_postal',
         'date_creation',
     ]
     
@@ -62,22 +67,21 @@ class EleveAdmin(admin.ModelAdmin):
     
     list_filter = [
         'statut',
-        'statut_saisie',
         'classe',
-        'arrondissement',
+        'code_postal',
         'matieres_souhaitees',  # Filtre par matière
         'date_creation',
+        'co_responsable',
     ]
     
     search_fields = [
         'nom',
         'prenom',
-        'nom_parent',
-        'prenom_parent',
         'adresse',
         'etablissement',
         'telephone',
         'telephone_parent',
+        'code_postal',
     ]
     
     # Widget pour sélection multiple des matières
@@ -89,7 +93,7 @@ class EleveAdmin(admin.ModelAdmin):
     # 📝 FORMULAIRE D'ÉDITION
     # ========================================================================
     
-    readonly_fields = ['date_creation', 'date_modification', 'est_geolocalisé','statut_saisie']
+    readonly_fields = ['date_creation', 'date_modification', 'est_geolocalisé','statut_saisie','code_postal','arrondissement','latitude','longitude']
     
     fieldsets = (
         ('👤 Elève', {
@@ -99,6 +103,9 @@ class EleveAdmin(admin.ModelAdmin):
             )
         }),
         
+        ('👤 Gestion', {
+            'fields': ('co_responsable',)
+        }),
         ('👨‍👩‍👧‍👦 Parents', {
             'fields': (
                 ('nom_parent', 'prenom_parent'),
@@ -150,6 +157,59 @@ class EleveAdmin(admin.ModelAdmin):
         }),
     )
     
+    # Préserver les filtres lors de la navigation
+    preserve_filters = True
+    
+    # Sauvegarder en bas ET en haut du formulaire
+    save_on_top = True
+
+
+    # ========================================================================
+    # 🎨 STATUTS COLORES
+    # ========================================================================
+    def statut_colore(self, obj):
+        """Affiche le statut avec une couleur."""
+        couleurs = {
+            'accompagne': '#28a745',      # Vert
+            'a_accompagner': '#dc3545',   # Rouge
+            'en_attente': '#ffc107',      # Jaune/Orange
+            'archive': '#6c757d',         # Gris
+        }
+        
+        couleur = couleurs.get(obj.statut, '#6c757d')
+        
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">●</span> {}',
+            couleur,
+            obj.get_statut_display()
+        )
+    
+    statut_colore.short_description = 'Statut'
+    statut_colore.admin_order_field = 'statut'  # Permet de trier par statut
+
+    @admin.display(description='Co-responsable', ordering='co_responsable')
+    def coresponsable_vignette(self, obj):
+        # 1. Définir les couleurs de fond pour chaque statut
+        # 2. Utiliser format_html() pour générer une <span> avec style
+        # 3. Le style doit inclure : background, padding, border-radius, color (texte blanc)
+        if not obj.co_responsable:
+            return '-'
+    
+        colors = {
+            'Georges': '#007bff',
+            'David': '#6c757d',
+            'Bernadette': '#dc3545',
+            'Sylvie': '#28a745',
+            'Clara': '#8B5CF6',
+            'Martine': "#a1a728",
+            'Gilbert': "#123f0c",
+        }
+        color = colors.get(obj.co_responsable.profil.benevole.get_prenom(), '#6c757d')
+        return format_html(
+            '<span style="background-color: {}; padding: 4px 8px; border-radius: 4px; color: white;">{}</span>',
+            color,
+            obj.co_responsable.profil.benevole.get_prenom()
+        )
     # ========================================================================
     # 🎨 MÉTHODES PERSONNALISÉES
     # ========================================================================
@@ -222,6 +282,14 @@ class EleveAdmin(admin.ModelAdmin):
         return response
     exporter_csv.short_description = "📥 Exporter en CSV"
     
+     # Méthode pour afficher le bénévole associé
+    def co_responsable_nom(self, obj):
+        if obj.co_responsable and hasattr(obj.co_responsable, 'profil'):
+            return obj.co_responsable.profil.benevole.get_nom_complet()
+        return '-'
+    
+    co_responsable_nom.short_description = 'Co-responsable'
+
 # ============================================================================
 # 🎓 ADMINISTRATION DES BÉNÉVOLES
 # ============================================================================
@@ -245,7 +313,8 @@ class BenevoleAdmin(admin.ModelAdmin):
     list_display = [
         'nom',
         'prenom',
-        'statut',
+        'coresponsable_vignette',
+        'statut_colore',
         'ville',
         'telephone',
         'email',
@@ -261,6 +330,8 @@ class BenevoleAdmin(admin.ModelAdmin):
     search_fields = [
         'nom',
         'prenom',
+        'co_responsable__profil__benevole__nom',
+        'co_responsable__profil__benevole__prenom',
         'email',
         'telephone',
         'adresse',
@@ -296,7 +367,9 @@ class BenevoleAdmin(admin.ModelAdmin):
                 'est_responsable'
             )
         }),
-        
+        ('👤 Gestion', {
+            'fields': ('co_responsable',)
+        }),
         ('📍 Localisation', {
             'fields': (
                 'adresse',
@@ -330,7 +403,16 @@ class BenevoleAdmin(admin.ModelAdmin):
             ),
             'classes': ('collapse',)
         }),
-        
+        ('Candidature (nouveaux candidats)', {
+            'fields': (
+                'origine_contact',
+                'date_contact',
+                'disponibilites_competences',
+                'informations_complementaires',
+            ),
+            'classes': ('collapse',),
+            'description': 'Informations spécifiques aux candidats à recontacter'
+        }),
         ('💬 Notes', {
             'fields': (
                 'commentaires',
@@ -373,10 +455,91 @@ class BenevoleAdmin(admin.ModelAdmin):
     # Sauvegarder en bas ET en haut du formulaire
     save_on_top = True
     
+    # ========================================================================
+    # 5. ACTIONS PERSONNALISÉES UTILES
+    # ========================================================================
+    actions = [
+        'convertir_en_mentor',
+        'marquer_comme_disponible',
+        'marquer_comme_indisponible',
+    ]
+    
+    @admin.action(description="Convertir en Mentor")
+    def convertir_en_mentor(self, request, queryset):
+        updated = queryset.update(statut='Mentor')
+        self.message_user(request, f"{updated} bénévole(s) converti(s) en Mentor.")
+    
+    @admin.action(description="Marquer comme Disponible")
+    def marquer_comme_disponible(self, request, queryset):
+        updated = queryset.update(statut='Disponible')
+        self.message_user(request, f"{updated} bénévole(s) marqué(s) comme Disponible.")
+    
+    @admin.action(description="Marquer comme Indisponible")
+    def marquer_comme_indisponible(self, request, queryset):
+        updated = queryset.update(statut='Indisponible')
+        self.message_user(request, f"{updated} bénévole(s) marqué(s) comme Indisponible.")
+
     # ================================================================
     # 🎨 MÉTHODES PERSONNALISÉES POUR L'AFFICHAGE
     # ================================================================
     
+    # ========================================================================
+    # 🎨 STATUTS COLORES
+    # ========================================================================
+    def statut_colore(self, obj):
+        """Affiche le statut avec une couleur."""
+        couleurs = {
+            'Mentor': '#28a745',      # Vert
+            'Indisponible': '#dc3545',   # Rouge
+            'Disponible': '#ffc107',      # Jaune/Orange
+            'Archive': '#6c757d',         # Gris
+            'Candidat': '#17a2b8',         # Bleu
+        }
+        
+        couleur = couleurs.get(obj.statut, '#6c757d')
+        
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">●</span> {}',
+            couleur,
+            obj.get_statut_display()
+        )
+    
+    statut_colore.short_description = 'Statut'
+    statut_colore.admin_order_field = 'statut'  # Permet de trier par statut
+
+    @admin.display(description='Co-responsable', ordering='co_responsable')
+    def coresponsable_vignette(self, obj):
+        # 1. Définir les couleurs de fond pour chaque statut
+        # 2. Utiliser format_html() pour générer une <span> avec style
+        # 3. Le style doit inclure : background, padding, border-radius, color (texte blanc)
+        if not obj.co_responsable:
+            return '-'
+    
+        colors = {
+            'Georges': '#007bff',
+            'David': '#6c757d',
+            'Bernadette': '#dc3545',
+            'Sylvie': '#28a745',
+            'Clara': '#8B5CF6',
+            'Martine': "#a1a728",
+            'Gilbert': "#123f0c",
+        }
+        color = colors.get(obj.co_responsable.profil.benevole.get_prenom(), '#6c757d')
+        return format_html(
+            '<span style="background-color: {}; padding: 4px 8px; border-radius: 4px; color: white;">{}</span>',
+            color,
+            obj.co_responsable.profil.benevole.get_prenom()
+        )
+
+    # Méthode pour afficher le bénévole associé au co-responsable
+    @admin.display(description='Co-responsable', ordering='co_responsable__username')
+    def co_responsable_nom(self, obj):
+        if obj.co_responsable and hasattr(obj.co_responsable, 'profil'):
+            return obj.co_responsable.profil.benevole.get_nom_complet()
+        return '-'
+    
+    co_responsable_nom.short_description = 'Co-responsable'
+
     @admin.display(description='Nom complet', ordering='nom')
     def get_nom_complet_display(self, obj):
         """Affiche le nom complet avec icône selon le statut."""
@@ -401,8 +564,78 @@ class BenevoleAdmin(admin.ModelAdmin):
         'marquer_comme_mentor',
         'marquer_comme_disponible',
         'marquer_comme_indisponible',
-        'exporter_csv_complet'
+        'exporter_csv_complet',
+        'assigner_co_responsable'
     ]
+    
+    @admin.display(description='Statut', ordering='statut')
+    def statut_vignette(self, obj):
+        # 1. Définir les couleurs de fond pour chaque statut
+        # 2. Utiliser format_html() pour générer une <span> avec style
+        # 3. Le style doit inclure : background, padding, border-radius, color (texte blanc)
+        colors = {
+            'Mentor': '#007bff',
+            'Disponible': '#28a745',
+            'Indisponible': '#dc3545'
+        }
+        color = colors.get(obj.statut, '#6c757d')
+        return format_html(
+            '<span style="background-color: {}; padding: 4px 8px; border-radius: 4px; color: white;">{}</span>',
+            color,
+            obj.statut
+        )
+
+    @admin.action(description='Assigner un co-responsable aux bénévoles sélectionnés')
+    def assigner_co_responsable(self, request, queryset):
+        from django import forms
+        from django.shortcuts import render, redirect
+        from django.contrib.auth.models import User
+        
+        class CoResponsableForm(forms.Form):
+            co_responsable = forms.ModelChoiceField(
+                queryset=User.objects.filter(profil__isnull=False),
+                label="Co-responsable",
+                help_text="Sélectionnez l'utilisateur à assigner"
+            )
+        
+        # Si le formulaire est soumis
+        if 'apply' in request.POST:
+            print("🔍 FORMULAIRE SOUMIS")
+            form = CoResponsableForm(request.POST)
+            
+            if form.is_valid():
+                print("✅ FORMULAIRE VALIDE")
+                co_responsable = form.cleaned_data['co_responsable']
+                
+                # IMPORTANT : Récupérer les IDs depuis le POST
+                selected = request.POST.getlist('_selected_action')
+                print(f"IDs sélectionnés: {selected}")
+                
+                # Mettre à jour les bénévoles sélectionnés
+                count = Benevole.objects.filter(pk__in=selected).update(co_responsable=co_responsable)
+                print(f"✅ {count} bénévole(s) mis à jour")
+                
+                self.message_user(
+                    request,
+                    f'{count} bénévole(s) assigné(s) à {co_responsable.username}'
+                )
+                return redirect('admin:core_benevole_changelist')
+            else:
+                print("❌ FORMULAIRE INVALIDE:", form.errors)
+        
+        print("📝 AFFICHAGE DU FORMULAIRE")
+        form = CoResponsableForm()
+        
+        return render(
+            request,
+            'admin/assigner_co_responsable.html',
+            {
+                'form': form,
+                'benevoles': queryset,
+                'selected_ids': queryset.values_list('pk', flat=True),
+                'title': 'Assigner un co-responsable'
+            }
+        )
     
     @admin.action(description='✅ Marquer comme Mentor')
     def marquer_comme_mentor(self, request, queryset):
