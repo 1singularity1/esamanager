@@ -34,13 +34,14 @@ class VilleWidget(forms.TextInput):
         
         <style>
             .autocomplete-results {{
-                position: absolute;
+                position: relative;
                 z-index: 1000;
+                left: 700px;
                 background: white;
                 border: 1px solid #ddd;
-                max-height: 300px;
+                max-height: 200px;
                 overflow-y: auto;
-                width: 100%;
+                max-width: 300px;
                 box-shadow: 0 4px 6px rgba(0,0,0,0.1);
                 display: none;
             }}

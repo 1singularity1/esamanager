@@ -4,11 +4,12 @@
 {% block title %}Carte des Binômes - ESA Manager{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
 <!-- Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
     #map { 
-        height: 70vh; 
+        height: 80vh; 
         width: 70%;  /* 80% de largeur */
         float: left;  /* Aligné à gauche */
         margin-right: 10px;
@@ -71,6 +72,41 @@
         flex-shrink: 0;
     }
     
+    /* Boutons Tout afficher / Tout cacher */
+    .filter-buttons {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 15px;
+    }
+
+    .filter-btn {
+        flex: 1;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 5px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .filter-btn-show {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .filter-btn-show:hover {
+        background-color: #218838;
+    }
+
+    .filter-btn-hide {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .filter-btn-hide:hover {
+        background-color: #c82333;
+    }
     .info-popup {
         font-family: Arial, sans-serif;
         min-width: 200px;
@@ -92,7 +128,7 @@
     .sidebar {
         position: relative;
         width: 29%;  /* 20% de largeur */
-        height: 70vh;
+        height: 80vh;
         background: white;
         border-radius: 10px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.2);
@@ -105,7 +141,7 @@
     .sidebar-header {
         background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
         color: white;
-        padding: 20px;
+        padding: 5px;
         position: sticky;
         top: 0;
         z-index: 10;
@@ -135,7 +171,7 @@
     }
     
     .sidebar-section h4 {
-        color: #0066cc;
+        color: var(--primary-dark);
         margin: 0 0 15px 0;
         font-size: 16px;
         font-weight: 600;
@@ -176,6 +212,161 @@
         font-weight: 600;
         color: white;
     }
+
+    /* Boutons d'action dans la sidebar */
+    .sidebar-actions {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .sidebar-btn {
+        flex: 1;
+        padding: 10px 5px;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        text-decoration: none;
+        color: white;
+    }
+
+    .sidebar-btn-primary {
+        background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+        color: white !important;
+    }
+
+    .sidebar-btn-primary:hover {
+        background: linear-gradient(135deg, #0052a3 0%, #004080 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3);
+    }
+
+    .sidebar-btn-success {
+        color: white !important;
+        background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+    }
+
+    .sidebar-btn-success:hover {
+        background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    .sidebar-btn-warning {
+        color: white !important;
+        background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+        color: #000;
+    }
+
+    .sidebar-btn-warning:hover {
+        background: linear-gradient(135deg, #e0a800 0%, #d39e00 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+    }
+
+    .sidebar-btn i {
+        font-size: 14px;
+    }
+
+    /* Style pour le panneau d'itinéraire */
+    .leaflet-routing-container {
+        background: white;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        max-width: 300px;
+    }
+
+    .leaflet-routing-container h2 {
+        font-size: 14px;
+        margin: 0 0 10px 0;
+    }
+
+    .leaflet-routing-alt {
+        padding: 8px;
+        margin: 5px 0;
+        background: #f8f9fa;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .leaflet-routing-alt:hover {
+        background: #e9ecef;
+    }
+
+    /* Bouton pour afficher/masquer l'itinéraire */
+    .route-toggle-btn {
+        padding: 8px 12px;
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 10px;
+        width: 100%;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .route-toggle-btn:hover {
+        background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+    }
+
+    .route-toggle-btn.active {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    }
+
+    .route-toggle-btn.active:hover {
+        background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+    }
+
+    /* Info de l'itinéraire dans la sidebar */
+    .route-info {
+        background: #f8f9fa;
+        padding: 12px;
+        border-radius: 6px;
+        margin-top: 15px;
+        border-left: 4px solid #6366f1;
+    }
+
+    .route-info h5 {
+        margin: 0 0 8px 0;
+        font-size: 13px;
+        color: #6366f1;
+        font-weight: 600;
+    }
+
+    .route-info-item {
+        display: flex;
+        justify-content: space-between;
+        margin: 5px 0;
+        font-size: 12px;
+    }
+
+    .route-info-label {
+        color: #666;
+    }
+
+    .route-info-value {
+        font-weight: 600;
+        color: #333;
+    }
 </style>
 {% endblock %}
 
@@ -186,8 +377,20 @@
             <i class="bi bi-link-45deg"></i> Carte des binômes actifs
             <span class="badge bg-primary">{{ total_binomes }} binôme(s)</span>
         </h2>
-        <p class="text-muted">
+        <p class="text-muted" style="margin-bottom: 0;">
             Visualisation des paires élèves-bénévoles avec filtrage par arrondissement
+        </p>
+        <p class="text-muted">
+            <small style="display: flex; align-items: center; gap: 20px; margin-top: 8px;">
+                <span style="display: flex; align-items: center; gap: 6px;">
+                    <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #FF5252; border: 2px solid #000;"></span>
+                    <strong>Ronds</strong> = Élèves en attente
+                </span>
+                <spa style="display: flex; align-items: center; gap: 6px;">
+                    <span style="display: inline-block; width: 12px; height: 12px; background: #FF5252; border: 2px solid #000;"></span>
+                    <strong>Carrés</strong> = Candidats/bénévoles disponibles
+                </span>
+            </small>
         </p>
     </div>
 </div>
@@ -216,11 +419,19 @@
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+<!-- Leaflet Routing Machine JS -->
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 
 <script>
 // ============================================================================
 // 🎨 CONFIGURATION
 // ============================================================================
+
+// Variables globales pour le routing
+let currentRoutingControl = null;
+let currentRouteInfo = null;
+let currentEleveCoords = null;
+let currentBenevoleCoords = null;
 
 const markerColors = [
     '#FF5252', '#18FFFF', '#B2FF59', '#FFD740', '#E040FB',
@@ -254,6 +465,7 @@ function getCouleurArrondissement(codePostalOuArrondissement) {
 // ============================================================================
 
 const map = L.map('map').setView([43.2965, 5.3698], 12);
+const initialMapView = { center: [43.2965, 5.3698], zoom: 12 };
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors',
@@ -322,6 +534,7 @@ fetch('{% static "core/data/arrondissements.geojson" %}')
         data.binomes.forEach(binome => {
             const eleve = binome.eleve;
             const benevole = binome.benevole;
+            const date_debut = binome.date_debut;
             
             const eleveArrIndex = extraireNumeroArrondissementTexte(eleve.arrondissement);
             const couleurEleve = markerColors[(eleveArrIndex-1) % markerColors.length];
@@ -356,18 +569,9 @@ fetch('{% static "core/data/arrondissements.geojson" %}')
             markerEleve.on('click', function(e) {
                 L.DomEvent.stopPropagation(e);  // ← Ajoute cette ligne
                 console.log('Click élève:', eleve.prenom);  // ← Pour déboguer
-                showSidebarEleve(eleve, benevole, couleurEleve);
+                showSidebar(benevole, eleve, couleurBenevole, binome);
             });
 
-            // markerEleve.bindPopup(`
-            //     <div class="info-popup">
-            //         <h4>👨‍🎓 ${eleve.prenom} ${eleve.nom}</h4>
-            //         <p><strong>Classe:</strong> ${eleve.classe}</p>
-            //         <p><strong>Code postal:</strong> ${eleve.arrondissement}</p>
-            //         <p><strong>Bénévole:</strong> ${benevole.prenom} ${benevole.nom}</p>
-            //     </div>
-            // `);
-            
             // Marqueur bénévole - CARRÉ coloré (Candidat/Disponible)
             const squareIcon = L.divIcon({
                 className: 'square-marker',
@@ -392,16 +596,8 @@ fetch('{% static "core/data/arrondissements.geojson" %}')
             markerBenevole.on('click', function(e) {
                 L.DomEvent.stopPropagation(e);  // ← Ajoute cette ligne
                 console.log('Click bénévole:', benevole.prenom);  // ← Pour déboguer
-                showSidebarBenevole(benevole, eleve, couleurBenevole);
+                showSidebar(benevole, eleve, couleurBenevole, binome);
             });
-            
-            // markerBenevole.bindPopup(`
-            //     <div class="info-popup">
-            //         <h4>🎓 ${benevole.prenom} ${benevole.nom}</h4>
-            //         <p><strong>Code postal:</strong> ${benevole.arrondissement}</p>
-            //         <p><strong>Élève:</strong> ${eleve.prenom} ${eleve.nom}</p>
-            //     </div>
-            // `);
             
             // Stocker le binôme
             binomeLayers.push({
@@ -489,8 +685,18 @@ function creerControleFiltre() {
     
     filterControl.onAdd = function() {
         const div = L.DomUtil.create('div', 'filter-control');
-        div.innerHTML = '<h3>🔍 Filtrer par arrondissement</h3>';
         
+        div.innerHTML = `
+            <h3>🔍 Filtrer par arrondissement</h3>
+            <div class="filter-buttons">
+                <button class="filter-btn filter-btn-show" onclick="toggleTousArrondissements(true)">
+                    Tout afficher
+                </button>
+                <button class="filter-btn filter-btn-hide" onclick="toggleTousArrondissements(false)">
+                    Tout cacher
+                </button>
+            </div>
+        `;
         geojsonData.features.forEach((feature, index) => {
             const nom = feature.properties.nom;
             const arr = extraireNumeroArrondissement(feature.properties.codes_postaux);
@@ -513,6 +719,18 @@ function creerControleFiltre() {
     filterControl.addTo(map);
 }
 
+// Fonction globale pour toggle tous les arrondissements
+window.toggleTousArrondissements = function(show) {
+    geojsonData.features.forEach((feature, index) => {
+        const checkbox = document.getElementById('arr' + index);
+        if (checkbox) {
+            checkbox.checked = show;
+            arrondissementVisibility[index] = show;
+        }
+    });
+    updateBinomeVisibility();
+};
+
 // Fonction globale pour toggle arrondissement
 window.toggleArrondissement = function(index) {
     const checkbox = document.getElementById('arr' + index);
@@ -524,86 +742,244 @@ window.toggleArrondissement = function(index) {
 // 📋 GESTION DE LA SIDEBAR
 // ============================================================================
 
+// ============================================================================
+// GESTION DES ITINÉRAIRES
+// ============================================================================
+
 /**
- * Affiche la sidebar avec les détails d'un élève
+ * Affiche l'itinéraire à pied entre deux points
  */
-function showSidebarEleve(eleve, benevole, couleur) {
-    const sidebar = document.getElementById('sidebar');
-    const title = document.getElementById('sidebar-title');
-    const content = document.getElementById('sidebar-content');
+function afficherItineraire(latLngEleve, latLngBenevole, mode = 'foot') {
+    // Supprimer l'itinéraire précédent s'il existe
+    if (currentRoutingControl) {
+        map.removeControl(currentRoutingControl);
+        currentRoutingControl = null;
+    }
     
-    title.innerHTML = `👨‍🎓 Élève`;
+    console.log('Calcul itinéraire:', mode, 'de', latLngEleve, 'vers', latLngBenevole);
     
-    content.innerHTML = `
-        <div class="sidebar-section">
-            <h4>👤 Informations personnelles</h4>
-            <div class="sidebar-info">
-                <div class="sidebar-info-item">
-                    <span class="sidebar-info-label">Nom complet</span>
-                    <span class="sidebar-info-value"><strong>${eleve.prenom} ${eleve.nom}</strong></span>
-                </div>
-                <div class="sidebar-info-item">
-                    <span class="sidebar-info-label">Classe</span>
-                    <span class="sidebar-info-value">${eleve.classe || 'Non renseignée'}</span>
-                </div>
-                <div class="sidebar-info-item">
-                    <span class="sidebar-info-label">Arrondissement</span>
-                    <span class="sidebar-info-value">
-                        <span class="arrondissement-badge" style="background-color: ${couleur};">
-                            ${eleve.arrondissement}
-                        </span>
-                    </span>
-                </div>
-            </div>
-        </div>
+    // Créer le contrôle de routing
+    // OSRM v1 attend une URL sans le profil à la fin
+    currentRoutingControl = L.Routing.control({
+        waypoints: [
+            L.latLng(latLngEleve[0], latLngEleve[1]),
+            L.latLng(latLngBenevole[0], latLngBenevole[1])
+        ],
+        router: L.Routing.osrmv1({
+            // L'URL de base sans le profil - il sera ajouté automatiquement
+            serviceUrl: 'https://router.project-osrm.org/route/v1',
+        }),
+        routeWhileDragging: false,
+        showAlternatives: false,
+        addWaypoints: false,
+        draggableWaypoints: false,
+        lineOptions: {
+            styles: [{color: '#6366f1', opacity: 0.8, weight: 6}]
+        },
+        createMarker: function() { return null; },
+        fitSelectedRoutes: true,
+        show: false,
+        collapsible: false,
+    }).addTo(map);
+    
+    // Cacher le panneau d'instructions s'il existe
+    setTimeout(() => {
+        const routingContainer = document.querySelector('.leaflet-routing-container');
+        if (routingContainer) {
+            routingContainer.style.display = 'none';
+        }
+    }, 100);
+
+    // Écouter l'événement quand l'itinéraire est trouvé
+    currentRoutingControl.on('routesfound', function(e) {
+        const routes = e.routes;
+        const summary = routes[0].summary;
         
-        <div class="sidebar-section">
-            <h4>🎓 Bénévole associé</h4>
-            <div class="sidebar-info">
-                <div class="sidebar-info-item">
-                    <span class="sidebar-info-label">Nom</span>
-                    <span class="sidebar-info-value">${benevole.prenom} ${benevole.nom}</span>
-                </div>
-                <div class="sidebar-info-item">
-                    <span class="sidebar-info-label">Code postal</span>
-                    <span class="sidebar-info-value">${benevole.code_postal}</span>
-                </div>
-            </div>
-        </div>
-    `;
+        console.log('✅ Itinéraire trouvé!', summary);
+        
+        // Calculer la distance et le temps
+        const distanceKm = (summary.totalDistance / 1000).toFixed(2);
+        const tempsMinutes = Math.round(summary.totalTime / 60);
+        
+        // Vérification : vitesse moyenne
+        const vitesseMoyenne = (summary.totalDistance / 1000) / (summary.totalTime / 3600);
+        console.log('Vitesse moyenne calculée:', vitesseMoyenne.toFixed(2), 'km/h');
+        
+        // Si le temps semble trop court (vitesse > 10 km/h), recalculer manuellement
+        let tempsAffiche = tempsMinutes;
+        if (vitesseMoyenne > 10) {
+            // Recalcul manuel avec vitesse piéton réaliste (5 km/h)
+            const distanceNum = parseFloat(distanceKm);
+            tempsAffiche = Math.round((distanceNum / 5) * 60);
+            console.log('⚠️ Recalcul manuel du temps:', tempsAffiche, 'min (vitesse 5 km/h)');
+        }
+        
+        // Stocker les infos
+        currentRouteInfo = {
+            distance: distanceKm,
+            temps: tempsAffiche,
+            mode: 'À pied',
+            vitesse: vitesseMoyenne.toFixed(1)
+        };
+        
+        // Mettre à jour l'affichage
+        setTimeout(() => {
+            const routeInfoDiv = document.getElementById('route-info');
+            if (routeInfoDiv && currentRouteInfo) {
+                routeInfoDiv.style.display = 'block';
+                document.getElementById('route-distance').textContent = currentRouteInfo.distance + ' km';
+                document.getElementById('route-time').textContent = currentRouteInfo.temps + ' min';
+            }
+        }, 500);
+        
+        console.log(`Itinéraire trouvé: ${distanceKm} km, ${tempsAffiche} min`);
+    });
+    
+    // Gérer les erreurs
+    currentRoutingControl.on('routingerror', function(e) {
+        console.error('❌ Erreur routing:', e);
+        
+        // Afficher l'erreur détaillée dans la console
+        if (e.error && e.error.message) {
+            console.error('Message d\'erreur:', e.error.message);
+        }
+        if (e.error && e.error.status) {
+            console.error('Status HTTP:', e.error.status);
+        }
+        
+        alert('Impossible de calculer l\'itinéraire.\nErreur: ' + (e.error?.message || 'Inconnue'));
+        masquerItineraire();
+    });
 }
 
 /**
- * Affiche la sidebar avec les détails d'un bénévole
+ * Masque l'itinéraire
  */
-function showSidebarBenevole(benevole, eleve, couleur) {
+function masquerItineraire() {
+    if (currentRoutingControl) {
+        map.removeControl(currentRoutingControl);
+        currentRoutingControl = null;
+        currentRouteInfo = null;
+        
+        // Revenir au zoom initial
+        map.setView(initialMapView.center, initialMapView.zoom);
+    }
+}
+
+/**
+ * Toggle l'affichage de l'itinéraire
+ */
+function toggleItineraire(latLngEleve, latLngBenevole, mode = 'foot') {
+    if (currentRoutingControl) {
+        masquerItineraire();
+        return false;
+    } else {
+        afficherItineraire(latLngEleve, latLngBenevole, mode);
+        return true;
+    }
+}
+
+/**
+ * Toggle l'itinéraire (appelé par les boutons)
+ */
+window.toggleRoute = function(mode) {
+    if (!currentEleveCoords || !currentBenevoleCoords) {
+        console.error('Coordonnées manquantes');
+        alert('Erreur: coordonnées manquantes');
+        return;
+    }
+    
+    const btn = document.getElementById(`route-toggle-${mode}`);
+    const text = document.getElementById(`route-text-${mode}`);
+    const routeInfoDiv = document.getElementById('route-info');
+    
+    if (!btn || !text) {
+        console.error('Bouton introuvable');
+        return;
+    }
+    
+    const isActive = toggleItineraire(currentEleveCoords, currentBenevoleCoords, mode);
+    
+    if (isActive) {
+        btn.classList.add('active');
+        text.textContent = 'Masquer l\'itinéraire';
+    } else {
+        btn.classList.remove('active');
+        text.textContent = 'Voir l\'itinéraire à pied';
+        if (routeInfoDiv) {
+            routeInfoDiv.style.display = 'none';
+        }
+    }
+};
+
+/**
+ * Affiche la sidebar avec les détails d'un binôme
+ */
+function showSidebar(benevole, eleve, couleur, binome) {
     const sidebar = document.getElementById('sidebar');
     const title = document.getElementById('sidebar-title');
     const content = document.getElementById('sidebar-content');
     
-    title.innerHTML = `🎓 Bénévole`;
+    // Stocker les coordonnées pour l'itinéraire
+    currentEleveCoords = [eleve.latitude, eleve.longitude];
+    currentBenevoleCoords = [benevole.latitude, benevole.longitude];
+    
+    // Masquer l'itinéraire précédent
+    masquerItineraire();
+    
+    title.innerHTML = `🎓 Binôme`;
     
     content.innerHTML = `
+        <div class="sidebar-actions">
+            <a href="/admin/core/eleve/${eleve.id}/change/" 
+            class="sidebar-btn sidebar-btn-primary" 
+            target="_blank">
+                <i class="bi bi-person-badge"></i>
+                <span>Editer Élève</span>
+            </a>
+            <a href="/admin/core/benevole/${benevole.id}/change/" 
+            class="sidebar-btn sidebar-btn-success" 
+            target="_blank">
+                <i class="bi bi-mortarboard"></i>
+                <span>Editer Mentor</span>
+            </a>
+            ${binome ? `
+            <a href="/admin/core/binome/${binome.id}/change/" 
+            class="sidebar-btn sidebar-btn-warning" 
+            target="_blank">
+                <i class="bi bi-people"></i>
+                <span>Editer Binôme</span>
+            </a>
+            ` : ''}
+        </div>
         <div class="sidebar-section">
-            <h4>👤 Informations personnelles</h4>
+            <h4>🎓 Mentor</h4>
             <div class="sidebar-info">
                 <div class="sidebar-info-item">
                     <span class="sidebar-info-label">Nom complet</span>
                     <span class="sidebar-info-value"><strong>${benevole.prenom} ${benevole.nom}</strong></span>
                 </div>
                 <div class="sidebar-info-item">
-                    <span class="sidebar-info-label">Code postal</span>
+                    <span class="sidebar-info-label">Téléphone</span>
                     <span class="sidebar-info-value">
-                        <span class="arrondissement-badge" style="background-color: ${couleur};">
-                            ${benevole.code_postal}
+                        ${benevole.telephone || 'Non renseigné'}
+                    </span>
+                </div>
+                <div class="sidebar-info-item">
+                    <span class="sidebar-info-label">Adresse</span>
+                    <span class="sidebar-info-value">
+                        ${benevole.adresse || ''}<br>
+                         <span class="arrondissement-badge" style="background-color: ${couleur};">
+                            ${benevole.arrondissement}
                         </span>
+                        ${benevole.ville || ''}
                     </span>
                 </div>
             </div>
         </div>
         
         <div class="sidebar-section">
-            <h4>👨‍🎓 Élève accompagné</h4>
+            <h4>👨‍🎓 Mentoré</h4>
             <div class="sidebar-info">
                 <div class="sidebar-info-item">
                     <span class="sidebar-info-label">Nom</span>
@@ -614,8 +990,50 @@ function showSidebarBenevole(benevole, eleve, couleur) {
                     <span class="sidebar-info-value">${eleve.classe || 'Non renseignée'}</span>
                 </div>
                 <div class="sidebar-info-item">
-                    <span class="sidebar-info-label">Arrondissement</span>
-                    <span class="sidebar-info-value">${eleve.arrondissement}</span>
+                    <span class="sidebar-info-label">Adresse</span>
+                    <span class="sidebar-info-value">
+                        ${eleve.adresse || ''}<br>
+                         <span class="arrondissement-badge" style="background-color: ${couleur};">
+                            ${eleve.code_postal || eleve.arrondissement}
+                        </span>
+                        ${eleve.ville || ''}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-info">
+                <div class="sidebar-info-item">
+                    <span class="sidebar-info-label">Référent</span>
+                    <span class="sidebar-info-value">${eleve.referent || 'Non renseigné'}</span>
+                </div>
+                ${binome && binome.date_debut ? `
+                <div class="sidebar-info-item">
+                    <span class="sidebar-info-label">Date de début</span>
+                    <span class="sidebar-info-value">
+                        ${new Date(binome.date_debut).toLocaleDateString('fr-FR')}
+                    </span>
+                </div>
+                ` : ''}
+            </div>
+            
+            <!-- Bouton itinéraire -->
+            <button class="route-toggle-btn" id="route-toggle-foot" onclick="toggleRoute('foot')" style="margin-top: 15px;">
+                <i class="bi bi-person-walking"></i>
+                <span id="route-text-foot">Voir l'itinéraire à pied</span>
+            </button>
+            
+            <!-- Info itinéraire (caché par défaut) -->
+            <div class="route-info" id="route-info" style="display: none;">
+                <h5><i class="bi bi-map"></i> Itinéraire à pied</h5>
+                <div class="route-info-item">
+                    <span class="route-info-label">Distance:</span>
+                    <span class="route-info-value" id="route-distance">-</span>
+                </div>
+                <div class="route-info-item">
+                    <span class="route-info-label">Temps estimé:</span>
+                    <span class="route-info-value" id="route-time">-</span>
                 </div>
             </div>
         </div>
@@ -624,10 +1042,13 @@ function showSidebarBenevole(benevole, eleve, couleur) {
 
 // Fermer la sidebar en cliquant sur la carte
 map.on('click', function(e) {
+    // Masquer l'itinéraire
+    masquerItineraire();
+    
     // Ne fermer que si on clique sur la carte, pas sur un marqueur
     if (e.originalEvent.target.classList.contains('leaflet-container') || 
         e.originalEvent.target.tagName === 'path') {
-        closeSidebar();
+        // closeSidebar(); // Si vous avez une fonction closeSidebar
     }
 });
 </script>

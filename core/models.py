@@ -425,11 +425,25 @@ class Benevole(models.Model):
         help_text="Exemple : 13001, 13190"
     )
     
+    arrondissement = models.CharField(
+        max_length=10,
+        blank=True,
+        verbose_name="Arrondissement",
+        help_text="Ex: 1er, 2e, 3e, etc."
+    )
+    
     ville = models.CharField(
         max_length=100,
         blank=True,
         verbose_name="Ville",
         help_text="Exemple : Marseille, Allauch"
+    )
+    
+    numero_rue = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Numéro",
+        help_text="Numéro de rue (ex: 12, 12 bis, 12 ter)"
     )
     
     zone_geographique = models.CharField(

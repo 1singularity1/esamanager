@@ -21,7 +21,8 @@ def home(request):
         'total_eleves': Eleve.objects.count(),
         'eleves_accompagnes': Eleve.objects.filter(statut='accompagne').count(),
         'total_benevoles': Benevole.objects.count(),
-        'benevoles_disponibles': Benevole.objects.filter(statut='Mentor').count(),  # ← MAJUSCULE !
+        'total_mentors': Benevole.objects.filter(statut='Mentor').count(),  # ← MAJUSCULE !
+        'total_candidats': Benevole.objects.filter(statut__in=['Candidat','Disponible']).count(),  # ← MAJUSCULE !
         'total_binomes': Binome.objects.filter(actif=True).count(),
     }
     
@@ -60,14 +61,17 @@ def carte_binomes(request):
 
 def carte_enattente(request):
     """Carte des élèves en attente"""
-     # Récupérer tous les binômes actifs
-    binomes = Binome.objects.filter(actif=True).select_related('eleve', 'benevole')
+     # Récupérer tous les élèves en attente (statut "a_accompagner") et les bénévoles candidats (statut "Mentor")
+    eleves = Eleve.objects.filter(statut='en_attente').select_related('co_responsable')
+    benevoles = Benevole.objects.filter(statut__in=['Candidat','Disponible']).select_related('co_responsable')
     
     # Compter pour les stats
-    total_binomes = binomes.count()
+    total_eleves = eleves.count()
+    total_candidats = benevoles.count()
     
     context = {
-        'total_binomes': total_binomes,
+        'total_eleves': total_eleves,
+        'total_candidats': total_candidats,
         'page_title': 'Carte des élèves en attente & des bénévoles candidat',
     }
     return render(request, 'core/carte_enattente.html', context)
@@ -80,7 +84,6 @@ def carte_enattente(request):
 def api_binomes_json(request):
     """
     API JSON qui retourne tous les binômes actifs pour la carte.
-    
     Format de retour :
     {
         "binomes": [
@@ -98,6 +101,9 @@ def api_binomes_json(request):
                     "id": 12,
                     "nom": "Martin",
                     "prenom": "Sophie",
+                    "code_postal": "13008",
+                    "statut": "Mentor",
+                    "profession": "Ingénieur",
                     "latitude": 43.2617,
                     "longitude": 5.3792
                 },
@@ -109,11 +115,10 @@ def api_binomes_json(request):
         "count": 75
     }
     """
-    
     # Récupérer les binômes actifs avec les relations
     binomes = Binome.objects.filter(actif=True).select_related('eleve', 'benevole')
-    
     data = []
+    
     for binome in binomes:
         # Vérifier que l'élève et le bénévole ont des coordonnées
         if binome.eleve.latitude and binome.eleve.longitude and \
@@ -125,19 +130,29 @@ def api_binomes_json(request):
                     'id': binome.eleve.id,
                     'nom': binome.eleve.nom,
                     'prenom': binome.eleve.prenom,
-                    'arrondissement': binome.eleve.arrondissement,
+                    'arrondissement': binome.eleve.arrondissement,  # Utiliser arrondissement directement
+                    'code_postal': binome.eleve.code_postal,
+                    'adresse': binome.eleve.adresse,
+                    'ville': binome.eleve.ville,
                     'classe': binome.eleve.classe,
-                    'latitude': binome.eleve.latitude,
-                    'longitude': binome.eleve.longitude,
+                    'latitude': float(binome.eleve.latitude),  # Convertir en float
+                    'longitude': float(binome.eleve.longitude),  # Convertir en float
+                    'referent': binome.eleve.co_responsable.get_full_name() if binome.eleve.co_responsable else None,
                 },
                 'benevole': {
                     'id': binome.benevole.id,
                     'nom': binome.benevole.nom,
                     'prenom': binome.benevole.prenom,
-                    'arrondissement': binome.benevole.code_postal,
-                    'ville' : binome.benevole.ville,
-                    'latitude': binome.benevole.latitude,
-                    'longitude': binome.benevole.longitude,
+                    'code_postal': binome.benevole.code_postal,  # ✅ AJOUTER code_postal
+                    'arrondissement': binome.benevole.code_postal,  # Pour compatibilité
+                    'statut': binome.benevole.statut,  # ✅ AJOUTER statut
+                    'profession': binome.benevole.profession or '',  # ✅ AJOUTER profession
+                    'adresse': binome.benevole.adresse,
+                    'telephone': binome.benevole.telephone,
+                    'ville': binome.benevole.ville,
+                    'latitude': float(binome.benevole.latitude),  # Convertir en float
+                    'longitude': float(binome.benevole.longitude),  # Convertir en float
+                    'referent': binome.benevole.co_responsable.get_full_name() if binome.benevole.co_responsable else None,
                 },
                 'date_debut': binome.date_debut.isoformat() if binome.date_debut else None,
                 'actif': binome.actif,
@@ -150,7 +165,8 @@ def api_eleves_json(request):
     """API JSON pour les élèves"""
     eleves = Eleve.objects.filter(
         latitude__isnull=False,
-        longitude__isnull=False
+        longitude__isnull=False,
+        statut='en_attente'  # Filtrer uniquement les élèves en attente d'accompagnement
     )
     
     data = []
@@ -162,8 +178,13 @@ def api_eleves_json(request):
             'classe': eleve.classe,
             'latitude': eleve.latitude,
             'longitude': eleve.longitude,
+            'adresse': eleve.adresse,
+            'code_postal': eleve.code_postal,
+            'ville': eleve.ville,
+            'telephone': eleve.telephone,
+            'matieres_souhaitees': list(eleve.matieres_souhaitees.values_list('nom', flat=True)),
             'arrondissement': eleve.arrondissement,
-            'statut': eleve.get_statut_display(),
+            'statut': eleve.statut,
         })
     
     return JsonResponse(data, safe=False)
@@ -173,7 +194,8 @@ def api_benevoles_json(request):
     """API JSON pour les bénévoles"""
     benevoles = Benevole.objects.filter(
         latitude__isnull=False,
-        longitude__isnull=False
+        longitude__isnull=False,
+        statut='Candidat'  # Filtrer uniquement les bénévoles candidats
     )
     
     data = []
@@ -184,8 +206,12 @@ def api_benevoles_json(request):
             'prenom': benevole.prenom,
             'latitude': benevole.latitude,
             'longitude': benevole.longitude,
-            'arrondissement': benevole.arrondissement,
-            'disponibilite': benevole.get_disponibilite_display(),
+            'adresse': benevole.adresse,
+            'code_postal': benevole.code_postal,
+            'ville': benevole.ville,
+            'telephone': benevole.telephone,
+            'matieres': list(benevole.matieres.values_list('nom', flat=True)),
+            'arrondissement': benevole.code_postal,
         })
     
     return JsonResponse(data, safe=False)

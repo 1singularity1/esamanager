@@ -12,6 +12,193 @@ from .models import Matiere, Eleve, Benevole, Binome, ProfilUtilisateur
 from .forms import EleveAdminForm, BenevoleAdminForm
 from django.utils.html import format_html
 from django.contrib.auth.models import User
+from django.urls import path
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+import requests
+import json
+from django.contrib import admin
+from .models import Matiere, Eleve, Benevole, Binome, ProfilUtilisateur
+from .forms import EleveAdminForm, BenevoleAdminForm
+from django.utils.html import format_html
+from django.contrib.auth.models import User
+from django.urls import path
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+import requests
+import json
+
+
+# ============================================================================
+# MIXIN GÉOLOCALISATION - VERSION OPENROUTESERVICE (PRODUCTION)
+# ============================================================================
+
+class GeolocalisationMixin:
+    """
+    Mixin pour ajouter la géolocalisation automatique dans l'admin
+    Utilise OpenRouteService pour les itinéraires (production-ready)
+    """
+    
+    def bouton_geolocalisation(self, obj):
+        """Affiche un bouton pour géolocaliser l'adresse"""
+        if not obj or not obj.pk:
+            return format_html('<p style="color: #666;">💡 Sauvegardez d\'abord</p>')
+        
+        return format_html(
+            '<div style="margin:20px 0;padding:15px;background:#f0f8ff;border-radius:8px;border-left:4px solid #0066cc;">'
+            '<h3 style="margin:0 0 10px 0;color:#0066cc;">📍 Géolocalisation automatique</h3>'
+            '<p style="margin:0 0 10px 0;color:#666;font-size:13px;">Renseignez le numéro de rue, l\'adresse et la ville, puis cliquez pour calculer automatiquement les coordonnées.</p>'
+            '<button type="button" id="btn-geo-{}" class="button" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white!important;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;">📍 Géolocaliser</button>'
+            '<span id="status-{}" style="margin-left:10px;font-weight:600;"></span>'
+            '<div id="result-{}" style="margin-top:15px;display:none;padding:10px;background:#e7f3ff;border-radius:6px;font-size:13px;"></div>'
+            '<script>'
+            'window.addEventListener("load", function() {{'
+            '  const btn = document.getElementById("btn-geo-{}");'
+            '  if(!btn) return;'
+            '  btn.addEventListener("click", async function() {{'
+            '    const status = document.getElementById("status-{}");'
+            '    const result = document.getElementById("result-{}");'
+            '    try {{'
+            '      const villeEl = document.querySelector("#id_ville");'
+            '      const adresseEl = document.querySelector("#id_adresse");'
+            '      const numeroEl = document.querySelector("#id_numero_rue");'
+            '      if(!villeEl || !adresseEl || !numeroEl) {{'
+            '        status.innerHTML = "<span style=\\"color:#dc3545\\">❌ Champs introuvables</span>";'
+            '        return;'
+            '      }}'
+            '      const ville = villeEl.value.trim();'
+            '      const adresse = adresseEl.value.trim();'
+            '      const numero = numeroEl.value.trim();'
+            '      if(!ville || !adresse || !numero) {{'
+            '        status.innerHTML = "<span style=\\"color:#dc3545\\">❌ Remplissez tous les champs</span>";'
+            '        return;'
+            '      }}'
+            '      btn.disabled = true;'
+            '      btn.innerHTML = "⏳ Géolocalisation...";'
+            '      status.innerHTML = "";'
+            '      result.style.display = "none";'
+            '      const response = await fetch("/admin/core/{}/{}/geolocaliser/", {{'
+            '        method: "POST",'
+            '        headers: {{'
+            '          "Content-Type": "application/json",'
+            '          "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value'
+            '        }},'
+            '        body: JSON.stringify({{numero_rue:numero, adresse:adresse, ville:ville}})'
+            '      }});'
+            '      const data = await response.json();'
+            '      if(data.success) {{'
+            '        status.innerHTML = "<span style=\\"color:#28a745\\">✅ Géolocalisation réussie !</span>";'
+            '        result.innerHTML = "<div style=\\"line-height:1.8\\"><strong>📮 Code postal:</strong> " + data.code_postal + "<br><strong>🏘️ Arrondissement:</strong> " + (data.arrondissement || "-") + "<br><strong>🌍 Latitude:</strong> " + data.latitude + "<br><strong>🌍 Longitude:</strong> " + data.longitude + "</div><p style=\\"margin:10px 0 0 0;padding:8px;background:#fff3cd;border-radius:4px;font-size:12px;\\">💡 Cliquez sur Enregistrer pour sauvegarder les modifications.</p>";'
+            '        result.style.display = "block";'
+            '      }} else {{'
+            '        status.innerHTML = "<span style=\\"color:#dc3545\\">❌ " + (data.error || "Erreur de géolocalisation") + "</span>";'
+            '      }}'
+            '    }} catch(e) {{'
+            '      console.error("Erreur:", e);'
+            '      status.innerHTML = "<span style=\\"color:#dc3545\\">❌ Erreur: " + e.message + "</span>";'
+            '    }} finally {{'
+            '      btn.disabled = false;'
+            '      btn.innerHTML = "📍 Géolocaliser";'
+            '    }}'
+            '  }});'
+            '}});'
+            '</script>'
+            '</div>',
+            obj.pk, obj.pk, obj.pk, obj.pk, obj.pk, obj.pk, obj._meta.model_name, obj.pk
+        )
+    
+    bouton_geolocalisation.short_description = "Géolocalisation"
+    
+    def geolocaliser_view(self, request, object_id):
+        """
+        Vue pour géolocaliser une adresse
+        Utilise l'API gouvernementale française pour la géolocalisation
+        """
+        if request.method != 'POST':
+            return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+        
+        data = json.loads(request.body)
+        numero_rue = data.get('numero_rue', '').strip()
+        adresse = data.get('adresse', '').strip()
+        ville = data.get('ville', '').strip()
+        
+        # Vérifier que TOUS les champs sont présents
+        if not numero_rue or not adresse or not ville:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Le numéro de rue, l\'adresse et la ville sont obligatoires'
+            })
+        
+        # Construire l'adresse complète
+        adresse_complete = f"{numero_rue} {adresse}, {ville}"
+        
+        try:
+            # ================================================================
+            # 1. GÉOLOCALISATION avec API Adresse du gouvernement français
+            # ================================================================
+            url = "https://api-adresse.data.gouv.fr/search/"
+            params = {'q': adresse_complete, 'limit': 1}
+            
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            result = response.json()
+            
+            if not result.get('features'):
+                return JsonResponse({
+                    'success': False, 
+                    'error': f'Adresse non trouvée : "{adresse_complete}". Vérifiez l\'orthographe.'
+                })
+            
+            feature = result['features'][0]
+            coords = feature['geometry']['coordinates']
+            properties = feature['properties']
+            
+            longitude = coords[0]
+            latitude = coords[1]
+            code_postal = properties.get('postcode', '')
+            
+            # Extraire l'arrondissement pour Marseille
+            arrondissement = ''
+            if code_postal and code_postal.startswith('130'):
+                numero = code_postal[-2:]
+                if numero == '01':
+                    arrondissement = '1er'
+                else:
+                    arrondissement = f"{int(numero)}e"
+            
+            # ================================================================
+            # 2. SAUVEGARDER dans la base de données
+            # ================================================================
+            obj = get_object_or_404(self.model, pk=object_id)
+            obj.code_postal = code_postal
+            obj.arrondissement = arrondissement
+            obj.latitude = latitude
+            obj.longitude = longitude
+            obj.save(update_fields=['code_postal', 'arrondissement', 'latitude', 'longitude'])
+            
+            return JsonResponse({
+                'success': True,
+                'code_postal': code_postal,
+                'arrondissement': arrondissement,
+                'latitude': round(latitude, 6),
+                'longitude': round(longitude, 6),
+            })
+            
+        except requests.Timeout:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Timeout : l\'API met trop de temps à répondre'
+            })
+        except requests.RequestException as e:
+            return JsonResponse({
+                'success': False, 
+                'error': f'Erreur API : {str(e)}'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False, 
+                'error': f'Erreur : {str(e)}'
+            })
 
 
 # ============================================================================
@@ -43,7 +230,7 @@ class MatiereAdmin(admin.ModelAdmin):
 # ============================================================================
 
 @admin.register(Eleve)
-class EleveAdmin(admin.ModelAdmin):
+class EleveAdmin(GeolocalisationMixin, admin.ModelAdmin):
     form = EleveAdminForm
     """Configuration de l'affichage des élèves dans l'admin"""
     
@@ -93,7 +280,7 @@ class EleveAdmin(admin.ModelAdmin):
     # 📝 FORMULAIRE D'ÉDITION
     # ========================================================================
     
-    readonly_fields = ['date_creation', 'date_modification', 'est_geolocalisé','statut_saisie','code_postal','arrondissement','latitude','longitude']
+    readonly_fields = ['date_creation', 'date_modification', 'est_geolocalisé','statut_saisie','bouton_geolocalisation','code_postal','arrondissement','latitude','longitude']
     
     fieldsets = (
         ('👤 Elève', {
@@ -118,12 +305,12 @@ class EleveAdmin(admin.ModelAdmin):
             'fields': (
                 'ville',
                 'adresse',
-                'code_postal',
                 'numero_rue',
-                'arrondissement',
+                'bouton_geolocalisation',
+                'code_postal',
                 ('latitude', 'longitude'),
             ),
-            'description': 'L\'arrondissement et les coordonnées GPS sont remplis automatiquement',
+            'description': 'Saisissez l\'adresse et la ville, puis cliquez sur "Géolocaliser" pour remplir automatiquement les autres champs',
         }),
 
         ('🏫 Scolarité', {
@@ -162,6 +349,18 @@ class EleveAdmin(admin.ModelAdmin):
     
     # Sauvegarder en bas ET en haut du formulaire
     save_on_top = True
+
+    def get_urls(self):
+        """Ajouter l'URL pour la géolocalisation"""
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                '<int:object_id>/geolocaliser/',
+                self.admin_site.admin_view(self.geolocaliser_view),
+                name='eleve-geolocaliser',
+            ),
+        ]
+        return custom_urls + urls
 
 
     # ========================================================================
@@ -301,10 +500,11 @@ des filtres, recherches et actions personnalisées.
 """
 
 @admin.register(Benevole)
-class BenevoleAdmin(admin.ModelAdmin):
+class BenevoleAdmin(GeolocalisationMixin, admin.ModelAdmin):
     """
     Configuration avancée de l'interface d'administration pour les bénévoles.
     """
+    form = BenevoleAdminForm
     
     # ================================================================
     # 📋 AFFICHAGE DE LA LISTE
@@ -372,13 +572,15 @@ class BenevoleAdmin(admin.ModelAdmin):
         }),
         ('📍 Localisation', {
             'fields': (
+                'ville',
                 'adresse',
-                ('code_postal', 'ville'),
-                'zone_geographique',
+                'numero_rue',
+                'bouton_geolocalisation',
+                ('code_postal', 'zone_geographique'),
                 'moyen_deplacement',
                 ('latitude', 'longitude'),
             ),
-            'classes': ('collapse',)  # Section repliable
+            'classes': ('wide',)
         }),
         
         ('📊 Statut', {
@@ -435,6 +637,7 @@ class BenevoleAdmin(admin.ModelAdmin):
     # ================================================================
     
     readonly_fields = [
+        'bouton_geolocalisation',
         'date_creation',
         'date_modification'
     ]
@@ -454,6 +657,18 @@ class BenevoleAdmin(admin.ModelAdmin):
     
     # Sauvegarder en bas ET en haut du formulaire
     save_on_top = True
+    
+    def get_urls(self):
+        """Ajouter l'URL pour la géolocalisation"""
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                '<int:object_id>/geolocaliser/',
+                self.admin_site.admin_view(self.geolocaliser_view),
+                name='benevole-geolocaliser',
+            ),
+        ]
+        return custom_urls + urls
     
     # ========================================================================
     # 5. ACTIONS PERSONNALISÉES UTILES
