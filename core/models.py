@@ -139,7 +139,7 @@ class Eleve(models.Model):
     )
     
     telephone_parent = models.CharField(
-        max_length=20,
+        max_length=50,
         blank=True,
         verbose_name="Téléphone des parents",
         help_text="Numéro de téléphone principal des parents"
