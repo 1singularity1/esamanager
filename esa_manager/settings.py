@@ -8,6 +8,8 @@ Chaque section est commentée pour que vous compreniez son rôle.
 """
 
 from pathlib import Path
+from decouple import config, Csv
+
 
 # ============================================================================
 # 📁 CHEMINS DE BASE
@@ -28,14 +30,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Générer une clé : python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
 SECRET_KEY = 'django-insecure-votre-cle-secrete-a-changer-en-production-123456789'
 
-# Mode DEBUG : affiche les erreurs détaillées
-# ⚠️ EN PRODUCTION : Toujours mettre à False !
-DEBUG = True
+# ADMIN_ENABLED (AVANT INSTALLED_APPS !)
+ADMIN_ENABLED = config('ADMIN_ENABLED', default=True, cast=bool)
 
-# Hôtes autorisés à accéder au site
-# En développement : ['localhost', '127.0.0.1']
-# En production : ['esa.unsoutienpourapprendre.org', 'www.unsoutienpourapprendre.org']
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+# ALLOWED_HOSTS (avec .strip() pour éviter les espaces)
+ALLOWED_HOSTS = [h.strip() for h in config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')]
 
 
 # ============================================================================
@@ -50,7 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',       # Gestion des sessions
     'django.contrib.messages',       # Framework de messages
     'django.contrib.staticfiles',    # Gestion des fichiers statiques (CSS, JS, images)
-    'bootstrap5',               # Intégration de Bootstrap 5
+    'django_bootstrap5',               # Intégration de Bootstrap 5
     'django_bootstrap_icons',  # Intégration des icônes Bootstrap Icons
     # Vos applications personnalisées
     'core',  # ← Application principale ESA Manager
@@ -70,7 +69,8 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',          # Protection CSRF (attaques)
     'django.contrib.auth.middleware.AuthenticationMiddleware', # Authentification
     'django.contrib.messages.middleware.MessageMiddleware',    # Messages flash
-    'django.middleware.clickjacking.XFrameOptionsMiddleware', # Protection clickjacking
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.context_processors.version_info', # Protection clickjacking
 ]
 
 # ============================================================================
