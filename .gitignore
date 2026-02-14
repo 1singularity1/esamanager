@@ -155,3 +155,4 @@ celerybeat.pid
 #
 # Pour forcer l'ajout d'un fichier ignoré :
 # git add -f fichier.txt
+.env

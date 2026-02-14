@@ -30,6 +30,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Générer une clé : python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
 SECRET_KEY = 'django-insecure-votre-cle-secrete-a-changer-en-production-123456789'
 
+DEBUG = config('DEBUG', default=True, cast=bool)
+
 # ADMIN_ENABLED (AVANT INSTALLED_APPS !)
 ADMIN_ENABLED = config('ADMIN_ENABLED', default=True, cast=bool)
 
@@ -69,8 +71,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',          # Protection CSRF (attaques)
     'django.contrib.auth.middleware.AuthenticationMiddleware', # Authentification
     'django.contrib.messages.middleware.MessageMiddleware',    # Messages flash
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'core.context_processors.version_info', # Protection clickjacking
+    'django.middleware.clickjacking.XFrameOptionsMiddleware', # Protection clickjacking
 ]
 
 # ============================================================================
