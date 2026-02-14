@@ -157,7 +157,7 @@ class Eleve(models.Model):
     )
     
     etablissement = models.CharField(
-        max_length=200,
+        max_length=500,
         blank=True,
         verbose_name="Établissement scolaire",
         help_text="Nom de l'école, collège ou lycée"
@@ -198,7 +198,7 @@ class Eleve(models.Model):
     )
 
     adresse = models.CharField(
-        max_length=200,
+        max_length=500,
         blank=True,
         verbose_name="Nom de la rue",
         help_text="Ex: Rue de la République, Avenue du Prado"
@@ -293,7 +293,7 @@ class Eleve(models.Model):
     # ========================================================================
 
     complement_adresse = models.CharField(
-        max_length=200,
+        max_length=500,
         blank=True,
         verbose_name="Complément d'adresse",
         help_text="Ex: Bâtiment A, 3ème étage, appartement 12"
@@ -413,7 +413,7 @@ class Benevole(models.Model):
     # ================================================================
     
     adresse = models.CharField(
-        max_length=200,
+        max_length=500,
         blank=True,
         verbose_name="Adresse complète"
     )
