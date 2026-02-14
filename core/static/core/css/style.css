@@ -102,6 +102,21 @@ body {
     box-shadow: 0 6px 16px rgba(95, 111, 82, 0.4) !important;
 }
 
+/* Lien désactivé */
+.link-disabled {
+    color: #6c757d !important;          /* Gris */
+    text-decoration: none !important;    /* Pas de soulignement */
+    cursor: not-allowed !important;      /* Curseur interdit */
+    opacity: 0.5;                        /* Semi-transparent */
+    pointer-events: none;                /* Empêche les clics */
+}
+
+/* Optionnel : effet au survol désactivé */
+.link-disabled:hover {
+    color: #6c757d !important;
+    text-decoration: none !important;
+}
+
 .btn-primary:active,
 .btn-primary:focus {
     background: linear-gradient(135deg, var(--primary-dark) 0%, var(--vert) 100%) !important;

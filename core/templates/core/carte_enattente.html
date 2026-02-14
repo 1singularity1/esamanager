@@ -16,6 +16,24 @@
         box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     }
     
+    .btn-fake-disabled {
+        display: inline-block;
+        padding: 0.375rem 0.75rem;           /* Même padding qu'un btn Bootstrap */
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        text-align: center;
+        text-decoration: none;
+        vertical-align: middle;
+        border: 1px solid #696b6d;           /* Bordure grise */
+        border-radius: 0.25rem;              /* Coins arrondis */
+        background-color: #e9ecef;           /* Fond gris clair */
+        color: #717579;                      /* Texte gris */
+        cursor: not-allowed;                 /* Curseur interdit */
+        opacity: 0.65;                       /* Semi-transparent */
+        pointer-events: none;                /* Empêche les clics */
+    }
+
     .filter-control {
         background: white;
         padding: 15px;
@@ -1198,12 +1216,9 @@ function showSidebar(eleve, benevole, couleur) {
     
     content.innerHTML = `
         <div class="sidebar-actions">
-            <a href="${url}" 
-            class="sidebar-btn sidebar-btn-primary" 
-            target="_blank">
-                <i class="bi bi-person-badge"></i>
-                <span>Éditer ${eleve ? 'élève' : 'bénévole'}</span>
-            </a>
+            <span class="btn-fake-disabled">
+                <i class="bi bi-pen"></i>&nbsp;Editer ${eleve ? 'élève' : 'bénévole'}
+            </span>
         </div>
         <div class="sidebar-section">
             <h4><i class="bi bi-info-circle"></i> Informations personnelles</h4>
