@@ -73,7 +73,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware', # Protection clickjacking
 ]
 
-
 # ============================================================================
 # 🌐 CONFIGURATION URLs
 # ============================================================================
@@ -106,6 +105,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',  # {{ request }} disponible
                 'django.contrib.auth.context_processors.auth', # {{ user }} disponible
                 'django.contrib.messages.context_processors.messages', # Messages flash
+                'core.context_processors.version_info',
             ],
         },
     },

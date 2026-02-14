@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     
     <!-- 📝 Titre de la page (peut être surchargé par les templates enfants) -->
-    <title>{% block title %}ESA Manager{% endblock %}</title>
+    <title>{% block title %}ESAdmin{% endblock %}</title>
     {% load bootstrap5 %}
     {% bootstrap_css %}
     <!-- 🎨 Bootstrap 5 CSS -->
@@ -49,7 +49,7 @@
         <div class="container">
             <!-- Logo / Titre -->
             <a class="navbar-brand" href="{% url 'core:home' %}">
-                <i class="bi bi-book"></i> ESA Manager
+                <i class="bi bi-book"></i> ESAdmin Marseille
             </a>
             
             <!-- Bouton hamburger (mobile) -->
@@ -106,20 +106,6 @@
     </main>
     
     <!-- ================================================================ -->
-    <!-- 🦶 FOOTER -->
-    <!-- ================================================================ -->
-    <footer class="bg-light py-4 mt-5">
-        <div class="container text-center">
-            <p class="text-muted mb-0">
-                &copy; 2026 ESA Manager - Un Soutien Pour Apprendre
-            </p>
-            <p class="text-muted small">
-                Fait avec <i class="bi bi-heart-fill text-danger"></i> et Django
-            </p>
-        </div>
-    </footer>
-    
-    <!-- ================================================================ -->
     <!-- 📜 JAVASCRIPT -->
     <!-- ================================================================ -->
     
@@ -128,5 +114,10 @@
     
     <!-- JavaScript personnalisé (optionnel) -->
     {% block extra_js %}{% endblock %}
+    <footer class="footer mt-auto py-3 bg-light border-top">
+        <div class="container text-center text-muted small">
+            <strong>{{ APP_NAME }}</strong> - {{ APP_VERSION }}
+        </div>
+    </footer>
 </body>
 </html>
