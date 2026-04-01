@@ -579,6 +579,7 @@ class Benevole(models.Model):
     )
     
     volet_3_casier_judiciaire = models.CharField(
+        null=True,
         max_length=50,
         blank=True,
         verbose_name="Volet 3 casier judiciaire",

@@ -93,6 +93,10 @@ class Command(BaseCommand):
                             if not nom_benevole or not prenom_benevole:
                                 continue
 
+                            # Ignorer si le nom bénévole commence par un chiffre (ex: numéro de téléphone)
+                            if nom_benevole and nom_benevole[0].isdigit():
+                                continue
+                            
                             benevole = self.trouver_benevole(
                                 tous_benevoles, nom_benevole, prenom_benevole, email_benevole
                             )

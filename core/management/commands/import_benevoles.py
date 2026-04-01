@@ -10,6 +10,13 @@ from core.models import Benevole, Matiere
 import csv
 from datetime import datetime
 
+import unicodedata
+
+def normaliser_nom(texte):
+    """Minuscules + suppression accents pour comparaison souple."""
+    texte = texte.lower().strip()
+    texte = unicodedata.normalize('NFD', texte)
+    return ''.join(c for c in texte if unicodedata.category(c) != 'Mn')
 
 class Command(BaseCommand):
     help = 'Importe les bénévoles depuis les fichiers CSV'
@@ -36,6 +43,8 @@ class Command(BaseCommand):
         created_count = 0
         updated_count = 0
         error_count = 0
+        # Pré-charger pour lookup nom+prénom
+        tous_benevoles = list(Benevole.objects.all())
         
         # ============================================================
         # IMPORT BÉNÉVOLES 2025-2026 (statut à déterminer plus tard)
@@ -52,14 +61,18 @@ class Command(BaseCommand):
                 
                 for row in reader:
                     try:
-                        # Ignorer les lignes vides
-                        if not row.get('Prénom') or not row.get('Mail') or '@' not in row.get('Mail') or len(row.get('Mail')) < 5:
-                            continue
-                        
                         # Extraire les données
                         # La première colonne contient le nom
                         first_col_name = reader.fieldnames[0]
                         nom = row.get(first_col_name, '').strip().rstrip('*')
+                        
+                        # Arrêter à la section Responsables
+                        if nom.lower() == 'responsables':
+                            break
+                        
+                        # Ignorer les lignes vides
+                        if not row.get('Prénom') or not row.get('Mail') or '@' not in row.get('Mail') or len(row.get('Mail')) < 5:
+                            continue
                         
                         prenom = row.get('Prénom', '').strip()
                         email = row.get('Mail', '').strip().lower()
@@ -178,6 +191,8 @@ class Command(BaseCommand):
         # IMPORT CANDIDATS À RECONTACTER (statut = Candidat)
         # ============================================================
         
+        tous_benevoles = list(Benevole.objects.all())
+        
         self.stdout.write(self.style.SUCCESS(f'\n📥 Import des candidats depuis {candidats_file}'))
         
         try:
@@ -227,48 +242,46 @@ class Command(BaseCommand):
                         
                         # Créer ou mettre à jour le candidat
                         
+                        # Créer ou mettre à jour le candidat
+
+                        # Chercher par email si disponible, sinon par nom+prénom
+                        if email:
+                            benevole = next(
+                                (b for b in tous_benevoles if b.email and b.email.lower() == email),
+                                None
+                            )
+                        else:
+                            nom_norm = normaliser_nom(nom)
+                            prenom_norm = normaliser_nom(prenom)
+                            benevole = next(
+                                (b for b in tous_benevoles
+                                 if normaliser_nom(b.nom) == nom_norm
+                                 and normaliser_nom(b.prenom) == prenom_norm),
+                                None
+                            )
+
                         if dry_run:
-                            # Mode test : vérifier si existe sans modifier
-                            benevole = Benevole.objects.filter(email=email).first()
                             if benevole:
                                 updated_count += 1
                                 self.stdout.write(f'  🔄 Mettrait à jour candidat : {prenom} {nom} ({email})')
                             else:
                                 created_count += 1
-                                self.stdout.write(f'  ✅ Créerait candidat : {prenom} {nom} ({email})')
-                                # Afficher pour vérifier que le nom est bien lu
-                                if not nom:
-                                    self.stdout.write(self.style.WARNING(f'      ⚠️  NOM VIDE détecté !'))
-                                else:
-                                    self.stdout.write(f'      → Nom: "{nom}"')
+                                self.stdout.write(f'  ✅ Créerait candidat : {prenom} {nom} ({email or "sans email"})')
                         else:
-                            # Mode réel : créer ou mettre à jour
-                            
-                            # D'abord, supprimer les doublons éventuels
-                            existing = Benevole.objects.filter(email=email)
-                            if existing.count() > 1:
-                                # Garder le premier, supprimer les autres
-                                to_keep = existing.first()
-                                for duplicate in existing[1:]:
-                                    duplicate.delete()
-                                self.stdout.write(f'  🧹 Doublons supprimés pour {email}')
-                            
-                            # Vérifier si existe déjà
-                            try:
-                                benevole = Benevole.objects.get(email=email)
-                                # EXISTE DÉJÀ : Ne mettre à jour QUE le statut
+                            if benevole:
                                 old_statut = benevole.statut
-                                benevole.statut = 'Candidat'
-                                benevole.save(update_fields=['statut'])
-                                
-                                updated_count += 1
-                                if old_statut != 'Candidat':
-                                    self.stdout.write(f'  🔄 Mis à jour statut candidat : {prenom} {nom} ({old_statut} → Candidat)')
+                                if old_statut == 'Mentor':
+                                    updated_count += 1
+                                    self.stdout.write(f'  ↻ Statut préservé candidat : {prenom} {nom} (Mentor)')
                                 else:
-                                    self.stdout.write(f'  ↻ Statut inchangé candidat : {prenom} {nom}')
-                                
-                            except Benevole.DoesNotExist:
-                                # N'EXISTE PAS : Créer avec toutes les données du CSV
+                                    benevole.statut = 'Candidat'
+                                    benevole.save(update_fields=['statut'])
+                                    updated_count += 1
+                                    if old_statut != 'Candidat':
+                                        self.stdout.write(f'  🔄 Mis à jour statut candidat : {prenom} {nom} ({old_statut} → Candidat)')
+                                    else:
+                                        self.stdout.write(f'  ↻ Statut inchangé candidat : {prenom} {nom}')
+                            else:
                                 benevole = Benevole.objects.create(
                                     email=email,
                                     nom=nom,
@@ -283,7 +296,7 @@ class Command(BaseCommand):
                                     commentaires=commentaires,
                                     divers=f"{infos_complementaires}\n{disponibilites}".strip(),
                                 )
-                                
+                                tous_benevoles.append(benevole)
                                 created_count += 1
                                 self.stdout.write(f'  ✅ Créé candidat : {prenom} {nom}')
                     
