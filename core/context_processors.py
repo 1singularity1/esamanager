@@ -7,7 +7,7 @@ import os
 from django.conf import settings
 
 # Ajouter le répertoire parent au path
-sys.path.insert(0, os.path.dirname(settings.BASE_DIR))
+sys.path.insert(0, str(settings.BASE_DIR))
 
 def version_info(request):
     """Ajoute les infos de version et nom de l'app au contexte"""
