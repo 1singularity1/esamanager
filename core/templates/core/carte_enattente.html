@@ -409,8 +409,10 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 let geojsonData = null;
 let arrondissementLayers = [];
-let binomeLayers = [];
+let eleveLayers = [];
+let benevoleLayers = [];
 const arrondissementVisibility = {};
+arrondissementVisibility['autre'] = true;
 
 // ⭐ 1. CHARGER LE GEOJSON DES ARRONDISSEMENTS
 fetch('{% static "core/data/arrondissements.geojson" %}')
@@ -464,7 +466,7 @@ fetch('{% static "core/data/arrondissements.geojson" %}')
         console.log(`${data.length} élèves chargés`);
         
         data.forEach(eleve => {
-            const eleveArrIndex = extraireNumeroArrondissementTexte(eleve.arrondissement);
+            const eleveArrIndex = extraireNumeroArrondissement(eleve.arrondissement);
             const couleurEleve = markerColors[(eleveArrIndex-1) % markerColors.length];
             
             // Marqueur élève - ROND coloré (en attente)
@@ -483,6 +485,11 @@ fetch('{% static "core/data/arrondissements.geojson" %}')
                 L.DomEvent.stopPropagation(e);  // ← Ajoute cette ligne
                 console.log('Click élève:', eleve.prenom);  // ← Pour déboguer
                 showSidebar(eleve, null, couleurEleve);
+            });
+
+            eleveLayers.push({
+                arrIndex: eleveArrIndex,
+                marker: markerEleve
             });
         });
         
@@ -524,7 +531,11 @@ fetch('{% static "core/data/arrondissements.geojson" %}')
                 console.log('Click bénévole:', benevole.prenom);  // ← Pour déboguer
                 showSidebar(null, benevole, couleurBenevole);
             });
-            
+
+            benevoleLayers.push({
+                arrIndex: benevoleArrIndex,
+                marker: markerBenevole
+            });
         });
     })
     .catch(error => {
@@ -1111,20 +1122,15 @@ function extraireNumeroArrondissementTexte(arrondissementTexte) {
     return 0;
 }
 
-function updateBinomeVisibility() {
-    binomeLayers.forEach(binome => {
-        const eleveVisible = arrondissementVisibility[binome.eleveArrIndex];
-        const benevoleVisible = arrondissementVisibility[binome.benevoleArrIndex];
-        const shouldShow = eleveVisible && benevoleVisible;
-        
-        if (shouldShow) {
-            map.addLayer(binome.markerEleve);
-            map.addLayer(binome.markerBenevole);
+function updateVisibility() {
+   [...eleveLayers, ...benevoleLayers].forEach(item => {
+        const key = item.arrIndex > 0 ? item.arrIndex : 'autre';
+        if (arrondissementVisibility[key]) {
+            map.addLayer(item.marker);
         } else {
-            map.removeLayer(binome.markerEleve);
-            map.removeLayer(binome.markerBenevole);
+            map.removeLayer(item.marker);
         }
-    });
+   });
 }
 
 // ============================================================================
@@ -1155,15 +1161,24 @@ function creerControleFiltre() {
             
             div.innerHTML += `
                 <div class="filter-item">
-                    <input type="checkbox" id="arr${index}" checked onchange="toggleArrondissement(${index})">
-                    <label for="arr${index}">
+                    <input type="checkbox" id="arr${index+1}" checked onchange="toggleArrondissement(${index+1})">
+                    <label for="arr${index+1}">
                         <span class="filter-color" style="background-color: ${color};"></span>
                         <span>${nom}</span>
                     </label>
                 </div>
             `;
         });
-        
+        // Après la boucle geojsonData.features.forEach(...)
+        div.innerHTML += `
+            <div class="filter-item">
+                <input type="checkbox" id="arr-autre" checked onchange="toggleArrondissement('autre')">
+                <label for="arr-autre">
+                    <span class="filter-color" style="background-color: #000000;"></span>
+                    <span>Autre</span>
+                </label>
+            </div>
+        `;
         return div;
     };
     
@@ -1173,20 +1188,27 @@ function creerControleFiltre() {
 // Fonction globale pour toggle tous les arrondissements
 window.toggleTousArrondissements = function(show) {
     geojsonData.features.forEach((feature, index) => {
-        const checkbox = document.getElementById('arr' + index);
+        index+=1;
+        const checkbox = document.getElementById('arr' + (index));
         if (checkbox) {
             checkbox.checked = show;
             arrondissementVisibility[index] = show;
         }
     });
-    updateBinomeVisibility();
+    // ← ajouter
+    const checkboxAutre = document.getElementById('arr-autre');
+    if (checkboxAutre) {
+        checkboxAutre.checked = show;
+        arrondissementVisibility['autre'] = show;
+    }
+    updateVisibility();
 };
 
 // Fonction globale pour toggle arrondissement
 window.toggleArrondissement = function(index) {
     const checkbox = document.getElementById('arr' + index);
     arrondissementVisibility[index] = checkbox.checked;
-    updateBinomeVisibility();
+    updateVisibility();
 };
 
 // ============================================================================

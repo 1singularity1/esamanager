@@ -1,0 +1,5 @@
+type,nom,prenom,adresse,code_postal,arrondissement,suggestion,adresse_corrigee
+Bénévole,Alliese,Didier,29 Impasse des Roitelets,13190,,13190,29 Impasse des Roitelets 13190 Allauch,
+Bénévole,BROIZAT,Myriam,10 Place Ramus - Aix en Pce,13100,,13100,10 Place Camus 13100 Aix-en-provence,
+Bénévole,Bricout,Mathilde,221 Traverse Ricard,13190,,13190,221 Traverse Ricard 13190 Allauch,
+Bénévole,Didier,Pascal,23 Lotissement Le Mas des Fourques,13124,,13124,23 Mas des Fourques 13124 Peypin,

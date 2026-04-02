@@ -144,7 +144,7 @@ def api_binomes_json(request):
                     'nom': binome.benevole.nom,
                     'prenom': binome.benevole.prenom,
                     'code_postal': binome.benevole.code_postal,  # ✅ AJOUTER code_postal
-                    'arrondissement': binome.benevole.code_postal,  # Pour compatibilité
+                    'arrondissement': binome.benevole.arrondissement,  # Pour compatibilité
                     'statut': binome.benevole.statut,  # ✅ AJOUTER statut
                     'profession': binome.benevole.profession or '',  # ✅ AJOUTER profession
                     'adresse': binome.benevole.adresse,
@@ -211,7 +211,7 @@ def api_benevoles_json(request):
             'ville': benevole.ville,
             'telephone': benevole.telephone,
             'matieres': list(benevole.matieres.values_list('nom', flat=True)),
-            'arrondissement': benevole.code_postal,
+            'arrondissement': benevole.arrondissement,
         })
     
     return JsonResponse(data, safe=False)

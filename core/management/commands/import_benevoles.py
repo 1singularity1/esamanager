@@ -263,14 +263,17 @@ class Command(BaseCommand):
                         if dry_run:
                             if benevole:
                                 updated_count += 1
-                                self.stdout.write(f'  🔄 Mettrait à jour candidat : {prenom} {nom} ({email})')
+                                if benevole.statut in ('Mentor', 'Disponible'):
+                                    self.stdout.write(f'  ↻ Statut préservé candidat : {prenom} {nom} ({benevole.statut})')
+                                else:
+                                    self.stdout.write(f'  🔄 Mettrait à jour candidat : {prenom} {nom} ({email})')
                             else:
                                 created_count += 1
                                 self.stdout.write(f'  ✅ Créerait candidat : {prenom} {nom} ({email or "sans email"})')
                         else:
                             if benevole:
                                 old_statut = benevole.statut
-                                if old_statut == 'Mentor':
+                                if old_statut in ('Mentor', 'Disponible'):
                                     updated_count += 1
                                     self.stdout.write(f'  ↻ Statut préservé candidat : {prenom} {nom} (Mentor)')
                                 else:
