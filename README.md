@@ -1,6 +1,6 @@
 # ESAdmin — Système de gestion des binômes ESA Marseille
 
-Application web Django de gestion des binômes de tutorat/mentorat pour l'antenne marseillaise de l'association ESA (Étudiants et Salarié·es Accompagnant·es).
+Application web Django de gestion des binômes de tutorat/mentorat pour l'antenne marseillaise de l'association ESA (Étudiants et Salarié(es)/Retraité(es) Accompagnant(es)).
 
 **Version :** Beta 0.2.0 — voir [CHANGELOG.md](CHANGELOG.md)
 
