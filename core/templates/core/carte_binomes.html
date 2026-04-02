@@ -386,6 +386,10 @@
         font-weight: 600;
         color: #333;
     }
+    .square-marker {
+        background: none !important;
+        border: none !important;
+    }
 </style>
 {% endblock %}
 
@@ -455,19 +459,19 @@ let currentBenevoleCoords = null;
 const markerColors = [
     '#FF5252', '#18FFFF', '#B2FF59', '#FFD740', '#E040FB',
     '#FFFF00', '#69F0AE', '#FF6E40', '#FF4081', '#40C4FF',
-    '#7C4DFF', '#FFD740', '#B2FF59', '#FFAB40', '#E040FB', '#1DE9B6'
+    '#7C4DFF', '#FFD740', '#B2FF59', '#FFAB40', '#E040FB', '#1DE9B6', "#000000"
 ];
 
 const colors = [
     '#FF1744', '#00E5FF', '#76FF03', '#FF9100', '#E040FB',
     '#FFEA00', '#00E676', '#FF3D00', '#F50057', '#00B0FF',
-    '#651FFF', '#FFC400', '#64DD17', '#FF6D00', '#D500F9', '#00BFA5'
+    '#651FFF', '#FFC400', '#64DD17', '#FF6D00', '#D500F9', '#00BFA5', "#000000"
 ];
 function getCouleurArrondissement(codePostalOuArrondissement) {
     if (!codePostalOuArrondissement) return '#aaaaaa';
     
     const str = codePostalOuArrondissement.toString();
-    const match = str.match(/130(\d{2})/);
+    const match = str.match(/^130(0[1-9]|1[0-6])$/);
     
     if (match) {
         const numero = parseInt(match[1], 10);
@@ -499,6 +503,7 @@ let geojsonData = null;
 let arrondissementLayers = [];
 let binomeLayers = [];
 const arrondissementVisibility = {};
+arrondissementVisibility['autre'] = true;
 
 // ⭐ 1. CHARGER LE GEOJSON DES ARRONDISSEMENTS
 fetch('{% static "core/data/arrondissements.geojson" %}')
@@ -555,12 +560,16 @@ fetch('{% static "core/data/arrondissements.geojson" %}')
             const benevole = binome.benevole;
             const date_debut = binome.date_debut;
             
-            const eleveArrIndex = extraireNumeroArrondissementTexte(eleve.arrondissement);
-            const couleurEleve = markerColors[(eleveArrIndex-1) % markerColors.length];
+            const eleveArrIndex = extraireNumeroArrondissement(eleve.arrondissement);
+            const couleurEleve = eleveArrIndex > 0 
+            ? markerColors[(eleveArrIndex-1) % markerColors.length] 
+            : '#000000';
             
             // Trouver l'arrondissement du bénévole
             const benevoleArrIndex = extraireNumeroArrondissement(benevole.arrondissement);
-            const couleurBenevole = markerColors[(benevoleArrIndex-1) % markerColors.length];
+            const couleurBenevole = benevoleArrIndex > 0 
+            ? markerColors[(benevoleArrIndex-1) % markerColors.length] 
+            : '#000000';
             
             // Ligne de connexion
             const polyline = L.polyline(
@@ -597,7 +606,7 @@ fetch('{% static "core/data/arrondissements.geojson" %}')
                 html: `<div style="
                     width: 16px; 
                     height: 16px; 
-                    background-color: ${couleurBenevole}; 
+                    background-color: ${couleurBenevole} !important; 
                     border: 2px solid #000000;
                     transform: translate(-8px, -8px);
                     opacity: 0.9;
@@ -679,9 +688,11 @@ function extraireNumeroArrondissementTexte(arrondissementTexte) {
 
 function updateBinomeVisibility() {
     binomeLayers.forEach(binome => {
-        const eleveVisible = arrondissementVisibility[binome.eleveArrIndex];
-        const benevoleVisible = arrondissementVisibility[binome.benevoleArrIndex];
-        const shouldShow = eleveVisible && benevoleVisible;
+        const eleveKey = binome.eleveArrIndex > 0 ? binome.eleveArrIndex : 'autre';
+        const benevoleKey = binome.benevoleArrIndex > 0 ? binome.benevoleArrIndex : 'autre';
+        const eleveVisible = arrondissementVisibility[eleveKey];
+        const benevoleVisible = arrondissementVisibility[benevoleKey];
+        const shouldShow = eleveVisible || benevoleVisible;
         
         if (shouldShow) {
             map.addLayer(binome.polyline);
@@ -723,14 +734,24 @@ function creerControleFiltre() {
             
             div.innerHTML += `
                 <div class="filter-item">
-                    <input type="checkbox" id="arr${index}" checked onchange="toggleArrondissement(${index})">
-                    <label for="arr${index}">
+                    <input type="checkbox" id="arr${index+1}" checked onchange="toggleArrondissement(${index+1})">
+                    <label for="arr${index+1}">
                         <span class="filter-color" style="background-color: ${color};"></span>
                         <span>${nom}</span>
                     </label>
                 </div>
             `;
         });
+        // Après la boucle geojsonData.features.forEach(...)
+        div.innerHTML += `
+            <div class="filter-item">
+                <input type="checkbox" id="arr-autre" checked onchange="toggleArrondissement('autre')">
+                <label for="arr-autre">
+                    <span class="filter-color" style="background-color: #000000;"></span>
+                    <span>Autre</span>
+                </label>
+            </div>
+        `;
         
         return div;
     };
@@ -741,12 +762,18 @@ function creerControleFiltre() {
 // Fonction globale pour toggle tous les arrondissements
 window.toggleTousArrondissements = function(show) {
     geojsonData.features.forEach((feature, index) => {
+        index+=1;
         const checkbox = document.getElementById('arr' + index);
         if (checkbox) {
             checkbox.checked = show;
             arrondissementVisibility[index] = show;
         }
     });
+    const checkboxAutre = document.getElementById('arr-autre');
+    if (checkboxAutre) {
+        checkboxAutre.checked = show;
+        arrondissementVisibility['autre'] = show;
+    }
     updateBinomeVisibility();
 };
 
