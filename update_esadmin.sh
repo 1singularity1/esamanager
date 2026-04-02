@@ -95,13 +95,21 @@ SQL
         | tee -a "$LOG_FILE"
 
     log "  Reconstruction des profils co-responsables..."
-    python manage.py dbshell << 'SQL'
-UPDATE core_profilutilisateur p
-SET benevole_id = b.id
-FROM core_benevole b
-JOIN auth_user u ON u.id = p.user_id
-WHERE b.email = u.email;
-SQL
+    python manage.py shell -c "
+from core.models import Benevole
+from django.contrib.auth.models import User
+from core.models import ProfilUtilisateur
+
+for profil in ProfilUtilisateur.objects.all():
+    user = profil.user
+    try:
+        benevole = Benevole.objects.get(email=user.email)
+        profil.benevole = benevole
+        profil.save()
+        print(f'OK: {user.username} -> {benevole.nom}')
+    except Benevole.DoesNotExist:
+        print(f'Non trouvé: {user.username} ({user.email})')
+"
     log "  Profils co-responsables reconstruits."
 
 else
