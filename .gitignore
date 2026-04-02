@@ -157,3 +157,17 @@ celerybeat.pid
 # Pour forcer l'ajout d'un fichier ignoré :
 # git add -f fichier.txt
 .env
+esa_manager_complet.tar.gz
+update_esadmin.sh
+test_import_esa/binomes_sylvie.csv
+test_import_esa/enfants_en_attente.csv
+test_import_esa/eleves_en_attente.csv
+test_import_esa/binomes_bernadette.csv
+test_import_esa/enfants.csv
+test_import_esa/eleves.csv
+test_import_esa/candidats.csv
+test_import_esa/binomes_clara.csv
+test_import_esa/benevoles.csv
+test_import_esa/binomes_gilbert.csv
+test_import_esa/binomes_david.csv
+test_import_esa/binomes_georges.csv
