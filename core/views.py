@@ -9,7 +9,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from .models import Eleve, Benevole, Binome
 from allauth.mfa.models import Authenticator
 from allauth.socialaccount.models import SocialAccount
-
+from django.contrib.auth.decorators import login_not_required
 import json
 
 
@@ -392,6 +392,7 @@ def profil(request):
         'google_data': social_account.extra_data if social_account else {},
     })
 
+@login_not_required
 def debug_ip(request):
     return JsonResponse({
         'REMOTE_ADDR': request.META.get('REMOTE_ADDR'),
