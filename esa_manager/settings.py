@@ -9,7 +9,7 @@ Chaque section est commentée pour que vous compreniez son rôle.
 
 from pathlib import Path
 from decouple import config, Csv
-
+import dj_database_url
 
 # ============================================================================
 # 📁 CHEMINS DE BASE
@@ -132,26 +132,17 @@ WSGI_APPLICATION = 'esa_manager.wsgi.application'
 # 🗄️ BASE DE DONNÉES
 # ============================================================================
 
-# Configuration SQLite (développement)
-# Simple, un seul fichier : db.sqlite3
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+DATABASE_URL = config('DATABASE_URL', default=None)
 
-# Pour PostgreSQL en production (commenté pour l'instant) :
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'esa_manager_db',
-#         'USER': 'esa_user',
-#         'PASSWORD': 'votre_mot_de_passe',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-#     }
-# }
+if DATABASE_URL:
+    DATABASES = {'default': dj_database_url.parse(DATABASE_URL)}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # ============================================================================
