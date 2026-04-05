@@ -23,3 +23,27 @@ class ESAAccountAdapter(DefaultSocialAccountAdapter):
             )
         print(f"DEBUG autorisé: {email}")
         print(f"DEBUG pre_social_login email: {sociallogin.account.extra_data.get('email')}")
+
+from allauth.account.adapter import DefaultAccountAdapter
+
+
+class CustomAccountAdapter(DefaultAccountAdapter):
+    """
+    Surcharge get_client_ip pour gérer le header X-Forwarded-For
+    qui peut contenir plusieurs IPs séparées par virgule (ex: "1.2.3.4, 127.0.0.1").
+    """
+
+    def get_client_ip(self, request):
+        # X-Forwarded-For en priorité (set par Nginx)
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            # Prendre uniquement la première IP (client réel)
+            return x_forwarded_for.split(',')[0].strip()
+
+        # Fallback X-Real-IP
+        x_real_ip = request.META.get('HTTP_X_REAL_IP')
+        if x_real_ip:
+            return x_real_ip.strip()
+
+        # Dernier recours
+        return request.META.get('REMOTE_ADDR', '')
