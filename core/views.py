@@ -7,6 +7,9 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.admin.views.decorators import staff_member_required
 from .models import Eleve, Benevole, Binome
+from allauth.mfa.models import Authenticator
+from allauth.socialaccount.models import SocialAccount
+
 import json
 
 
@@ -375,3 +378,16 @@ def validate_eleve(request):
             'success': False,
             'error': str(e)
         }, status=500)
+
+def profil(request):
+    social_account = SocialAccount.objects.filter(user=request.user, provider='google').first()
+    has_mfa = Authenticator.objects.filter(
+        user=request.user,
+        type=Authenticator.Type.TOTP
+    ).exists()
+    
+    return render(request, 'core/profil.html', {
+        'social_account': social_account,
+        'has_mfa': has_mfa,
+        'google_data': social_account.extra_data if social_account else {},
+    })

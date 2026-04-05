@@ -55,6 +55,12 @@ INSTALLED_APPS = [
     'django_bootstrap_icons',  # Intégration des icônes Bootstrap Icons
     # Vos applications personnalisées
     'core',  # ← Application principale ESA Manager
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.mfa',
 ]
 
 
@@ -70,6 +76,8 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',           # Fonctionnalités communes
     'django.middleware.csrf.CsrfViewMiddleware',          # Protection CSRF (attaques)
     'django.contrib.auth.middleware.AuthenticationMiddleware', # Authentification
+    'core.middleware.LoginRequiredMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',    # Messages flash
     'django.middleware.clickjacking.XFrameOptionsMiddleware', # Protection clickjacking
 ]
@@ -275,6 +283,49 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+# ============================================================================
+# 🔐 ALLAUTH - Authentification Google + 2FA
+# ============================================================================
+
+SITE_ID = 2
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+LOGIN_REDIRECT_URL = '/'
+ACCOUNT_LOGOUT_REDIRECT_URL = '/'
+SOCIALACCOUNT_ADAPTER = 'core.adapters.ESAAccountAdapter'
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+SOCIALACCOUNT_LOGIN_ON_GET = True
+LOGIN_URL = '/accounts/login/'
+ACCOUNT_LOGOUT_REDIRECT_URL = '/accounts/login/'
+MFA_TOTP_REGENERATE_SECRET_ON_FAILURE = False
+MFA_TOTP_TOLERANCE = 2
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': config('GOOGLE_CLIENT_ID'),
+            'secret': config('GOOGLE_CLIENT_SECRET'),
+        },
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+            'prompt': 'select_account',
+        },
+    }
+}
+
+MFA_TOTP_ISSUER = 'ESAdmin Marseille'
+MFA_TOTP_PERIOD = 30
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 
 
 # ============================================================================

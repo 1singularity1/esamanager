@@ -1,0 +1,39 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <i class="bi bi-shield-check fs-1 text-primary d-block mb-2"></i>
+                    <h4>Configurer l'authentification à deux facteurs</h4>
+                    <p class="text-muted">Scannez le QR code avec Google Authenticator</p>
+                </div>
+
+                <div class="text-center mb-4">
+                    {{ totp_svg|safe }}
+                </div>
+
+                <p class="text-muted small text-center mb-4">
+                    Clé manuelle : <code>{{ secret }}</code>
+                </p>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Code de vérification</label>
+                        {{ form.code }}
+                        {% if form.code.errors %}
+                            <div class="text-danger small">{{ form.code.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-circle"></i> Activer le 2FA
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

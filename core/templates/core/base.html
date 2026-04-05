@@ -67,12 +67,12 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'core:carte_binomes' %}">
-                            <i class="bi bi-map"></i> Bînômes actifs
+                            <i class="bi bi-map"></i> Bînômes
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'core:carte_enattente' %}">
-                            <i class="bi bi-geo-alt"></i> Elèves et bénévoles en attente
+                            <i class="bi bi-geo-alt"></i> En attente
                         </a>
                     </li>
                     <li class="nav-item">
@@ -80,6 +80,18 @@
                             <i class="bi bi-gear"></i> Gérer
                         </a>
                     </li>
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'core:profil' %}">
+                                <i class="bi bi-person-circle"></i> Profil
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'account_logout' %}">
+                                <i class="bi bi-box-arrow-right"></i> Déconnexion
+                            </a>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
@@ -116,7 +128,7 @@
     {% block extra_js %}{% endblock %}
     <footer class="footer mt-auto py-3 bg-light border-top">
         <div class="container text-center text-muted small">
-            <strong>{{ APP_NAME }}</strong> - <a href="https://github.com/1singularity1/esamanager/blob/main/CHANGELOG.md" target="_blank">{{ APP_VERSION }}</a>
+            <strong>{{ APP_NAME }}</strong> - <a href="https://github.com/1singularity1/esamanager/blob/main/CHANGELOG.md" target="_blank" style="color:white">{{ APP_VERSION }}</a>
         </div>
     </footer>
 </body>

@@ -1,0 +1,55 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    {% if google_data.picture %}
+                        <img src="{{ google_data.picture }}" class="rounded-circle mb-3" width="80">
+                    {% else %}
+                        <i class="bi bi-person-circle fs-1 text-muted d-block mb-3"></i>
+                    {% endif %}
+                    <h4>{{ google_data.name|default:request.user.username }}</h4>
+                    <p class="text-muted">{{ request.user.email }}</p>
+                </div>
+
+                <hr>
+
+                <div class="mb-3">
+                    <h6 class="text-muted">Authentification à deux facteurs</h6>
+                    {% if has_mfa %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-shield-check"></i> Activée
+                        </span>
+                        <a href="/accounts/2fa/" class="btn btn-sm btn-outline-secondary ms-2">Gérer</a>
+                    {% else %}
+                        <span class="badge bg-danger">
+                            <i class="bi bi-shield-x"></i> Non activée
+                        </span>
+                        <a href="/accounts/2fa/totp/activate/" class="btn btn-sm btn-outline-primary ms-2">Activer</a>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <h6 class="text-muted">Compte Google associé</h6>
+                    {% if social_account %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-google"></i> Connecté
+                        </span>
+                    {% else %}
+                        <span class="badge bg-warning">Non associé</span>
+                    {% endif %}
+                </div>
+
+                <hr>
+
+                <a href="/accounts/logout/" class="btn btn-outline-danger w-100">
+                    <i class="bi bi-box-arrow-right"></i> Se déconnecter
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

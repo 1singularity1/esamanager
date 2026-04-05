@@ -2,8 +2,8 @@
 Gestion de la version ESAdmin Marseille
 """
 
-__version__ = "0.2.0"
-__release_date__ = "2026-04-02"
+__version__ = "0.3.0"
+__release_date__ = "2026-04-05"
 __status__ = "beta"
 __author__ = "ESA Marseille"
 __changelog__ = "CHANGELOG.md"

@@ -1,0 +1,22 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-body text-center p-4">
+                <i class="bi bi-google fs-1 text-muted mb-3 d-block"></i>
+                <h4 class="mb-1">Confirmation de connexion</h4>
+                <p class="text-muted mb-4">Vous vous connectez avec le compte Google suivant :</p>
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-circle"></i> Confirmer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

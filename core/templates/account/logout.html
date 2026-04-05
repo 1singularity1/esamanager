@@ -1,0 +1,22 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-body text-center p-4">
+                <i class="bi bi-box-arrow-right fs-1 text-muted mb-3 d-block"></i>
+                <h4 class="mb-3">Se déconnecter</h4>
+                <p class="text-muted">Êtes-vous sûr(e) de vouloir vous déconnecter ?</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger w-100">
+                        <i class="bi bi-box-arrow-right"></i> Se déconnecter
+                    </button>
+                    <a href="/" class="btn btn-outline-secondary w-100 mt-2">Annuler</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
