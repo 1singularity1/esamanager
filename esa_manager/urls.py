@@ -18,6 +18,11 @@ urlpatterns = [
     path('', include('core.urls')),
 ]
 
+urlpatterns = [
+    path('accounts/', include('allauth.urls')),
+    path('', include('core.urls')),
+]
+
 # Ajouter l'admin seulement si activé
 if settings.ADMIN_ENABLED:
     urlpatterns.insert(0, path('admin/', admin.site.urls))
@@ -28,3 +33,4 @@ if settings.ADMIN_ENABLED:
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+

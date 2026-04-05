@@ -81,6 +81,7 @@ urlpatterns = [
     # Ces routes doivent être en dehors du namespace admin de Django
     path('autosave/eleve/', views.autosave_eleve, name='autosave_eleve'),
     path('validate/eleve/', views.validate_eleve, name='validate_eleve'),
+    path('profil/', views.profil, name='profil'),
 ]
 
 

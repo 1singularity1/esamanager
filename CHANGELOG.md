@@ -1,5 +1,27 @@
 # Changelog ESAdmin Marseille
 
+## [0.3.0] - 2026-04-05
+
+### Backend
+- Remplacement de l'authentification par login/mot de passe par Google OAuth via django-allauth
+- Restriction d'accès aux emails autorisés (vérification contre les utilisateurs Django existants)
+- Authentification à deux facteurs (2FA) TOTP obligatoire via Google Authenticator
+- Middleware LoginRequiredMiddleware : redirection automatique vers la page de connexion pour les utilisateurs non authentifiés
+- Middleware : redirection vers la configuration 2FA pour les utilisateurs sans TOTP activé
+- Correction du context processor version_info : chemin vers version.py
+- Ajout de Referrer-Policy: strict-origin-when-cross-origin dans Nginx pour résoudre le blocage des tuiles OpenStreetMap
+
+### Frontend
+- Page de connexion Google stylisée Bootstrap
+- Page de déconnexion stylisée
+- Page de configuration 2FA avec QR code stylisée
+- Page d'authentification 2FA stylisée
+- Page de gestion 2FA (index) stylisée
+- Page de codes de récupération stylisée
+- Page de désactivation 2FA stylisée
+- Page de profil utilisateur avec photo Google, statut 2FA et compte associé
+
+---
 ## [0.2.0] - 2026-04-02
 
 ### Backend
