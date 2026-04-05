@@ -82,6 +82,7 @@ urlpatterns = [
     path('autosave/eleve/', views.autosave_eleve, name='autosave_eleve'),
     path('validate/eleve/', views.validate_eleve, name='validate_eleve'),
     path('profil/', views.profil, name='profil'),
+    path('debug-ip/', views.debug_ip, name='debug_ip'),
 ]
 
 
