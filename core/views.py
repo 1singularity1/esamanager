@@ -391,11 +391,3 @@ def profil(request):
         'has_mfa': has_mfa,
         'google_data': social_account.extra_data if social_account else {},
     })
-
-@login_not_required
-def debug_ip(request):
-    return JsonResponse({
-        'REMOTE_ADDR': request.META.get('REMOTE_ADDR'),
-        'HTTP_X_FORWARDED_FOR': request.META.get('HTTP_X_FORWARDED_FOR'),
-        'HTTP_X_REAL_IP': request.META.get('HTTP_X_REAL_IP'),
-    })
