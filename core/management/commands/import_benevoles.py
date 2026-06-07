@@ -7,16 +7,37 @@ Usage:
 
 from django.core.management.base import BaseCommand
 from core.models import Benevole, Matiere
+from core.utils_matieres import extraire_matieres
 import csv
 from datetime import datetime
-
 import unicodedata
+
+ZONE_GEO_CHOICES = [
+    ('1', '1er'),
+    ('2', '2e'),
+    ('3', '3e'),
+    ('4', '4e'),
+    ('5', '5e'),
+    ('6', '6e'),
+    ('7', '7e'),
+    ('8', '8e'),
+    ('9', '9e'),
+    ('10', '10e'),
+    ('11', '11e'),
+    ('12', '12e'),
+    ('13', '13e'),
+    ('14', '14e'),
+    ('15', '15e'),
+    ('16', '16e'),
+    ('hors', 'Hors Marseille'),
+]
 
 def normaliser_nom(texte):
     """Minuscules + suppression accents pour comparaison souple."""
     texte = texte.lower().strip()
     texte = unicodedata.normalize('NFD', texte)
     return ''.join(c for c in texte if unicodedata.category(c) != 'Mn')
+
 
 class Command(BaseCommand):
     help = 'Importe les bénévoles depuis les fichiers CSV'
@@ -34,82 +55,76 @@ class Command(BaseCommand):
         benevoles_file = options['benevoles_csv']
         candidats_file = options['candidats_csv']
         dry_run = options.get('dry_run', False)
-        
+
         if dry_run:
             self.stdout.write(self.style.WARNING('\n' + '='*60))
             self.stdout.write(self.style.WARNING('🔍 MODE TEST - Aucune modification en base de données'))
             self.stdout.write(self.style.WARNING('='*60 + '\n'))
-        
+
         created_count = 0
         updated_count = 0
         error_count = 0
-        # Pré-charger pour lookup nom+prénom
         tous_benevoles = list(Benevole.objects.all())
-        
+
         # ============================================================
-        # IMPORT BÉNÉVOLES 2025-2026 (statut à déterminer plus tard)
+        # IMPORT BÉNÉVOLES 2025-2026
         # ============================================================
-        
+
         self.stdout.write(self.style.SUCCESS(f'\n📥 Import des bénévoles depuis {benevoles_file}'))
-        
+
         try:
             with open(benevoles_file, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
-                
-                # Nettoyer les noms de colonnes (BOM, espaces, etc.)
                 reader.fieldnames = [name.strip().lstrip('\ufeff').lstrip('\ufbff') for name in reader.fieldnames]
-                
+
                 for row in reader:
                     try:
-                        # Extraire les données
-                        # La première colonne contient le nom
                         first_col_name = reader.fieldnames[0]
                         nom = row.get(first_col_name, '').strip().rstrip('*')
-                        
+
                         # Arrêter à la section Responsables
                         if nom.lower() == 'responsables':
                             break
-                        
-                        # Ignorer les lignes vides
+
+                        # Ignorer les lignes sans prénom ou email valide
                         if not row.get('Prénom') or not row.get('Mail') or '@' not in row.get('Mail') or len(row.get('Mail')) < 5:
                             continue
-                        
+
                         prenom = row.get('Prénom', '').strip()
                         email = row.get('Mail', '').strip().lower()
-                        
-                        # Ignorer si pas de prénom ou email
+
                         if not prenom or not email:
                             continue
-                        
+
                         telephone = row.get('Mobile', '').strip()
-                        arrondissement = row.get('Arr.', '').strip()
+                        code_postal = row.get('Arr.', '').strip()
                         adresse = row.get('Adresse', '').strip()
                         profession = row.get('Profession', '').strip()
-                        zone_geo = row.get('Zone géographique', '').strip()
-                        
+
                         # Niveaux
                         primaire = bool(row.get('Primaire', '').strip())
                         college = bool(row.get('Collège', '').strip())
                         lycee = bool(row.get('Lycée', '').strip())
-                        
+
                         # Documents administratifs
-                        reunion_accueil_str = row.get('Réunion d\'accueil faite', '').strip()
+                        reunion_accueil_str = row.get("Réunion d'accueil faite", '').strip()
                         volet_3_str = row.get('Volet 3 casier judiciaire', '').strip()
-                        
-                        # Si "0" ou vide, considérer comme False (pas fait)
                         reunion_accueil = reunion_accueil_str not in ['', '0']
                         volet_3 = self.parse_date(volet_3_str) if volet_3_str and volet_3_str != '0' else None
                         a_donne_photo = bool(row.get('photo', '').strip())
-                        
+
                         # Commentaires
                         commentaires = row.get('Commentaires', '').strip()
                         divers = row.get('Divers', '').strip()
-                        
-                        # Créer ou mettre à jour le bénévole
-                        # Statut provisoire : Disponible (sera mis à jour après import binômes)
-                        
+
+                        # Matières (extraction uniquement pour la création)
+                        matieres_str = row.get('Matières', '').strip()
+                        matieres_reconnues, texte_non_reconnu = extraire_matieres(matieres_str)
+                        zone_geo_str = row.get('Zone géographique', '').strip()
+                        arrondissements, zone_commentaire = self.extraire_arrondissements(zone_geo_str)
+                        ville = row.get('Ville', '').strip() or self.get_ville_from_cp(code_postal)
+
                         if dry_run:
-                            # Mode test : vérifier si existe sans modifier
                             benevole = Benevole.objects.filter(email=email).first()
                             if benevole:
                                 updated_count += 1
@@ -117,36 +132,31 @@ class Command(BaseCommand):
                             else:
                                 created_count += 1
                                 self.stdout.write(f'  ✅ Créerait : {prenom} {nom} ({email})')
-                                # Afficher pour vérifier que le nom est bien lu
                                 if not nom:
                                     self.stdout.write(self.style.WARNING(f'      ⚠️  NOM VIDE détecté !'))
-                                else:
-                                    self.stdout.write(f'      → Nom: "{nom}"')
+                                if matieres_reconnues:
+                                    self.stdout.write(f'      → Matières : {", ".join(sorted(matieres_reconnues))}')
+                                if zone_geo_str:
+                                    self.stdout.write(f'      → Zone géographique : {zone_geo_str}')
+                                if texte_non_reconnu:
+                                    self.stdout.write(self.style.WARNING(
+                                        f'      ⚠️  Non reconnu → commentaires : "{texte_non_reconnu}"'))
                         else:
-                            # Mode réel : créer ou mettre à jour
-                            
-                            # D'abord, supprimer les doublons éventuels
+                            # Supprimer les doublons éventuels
                             existing = Benevole.objects.filter(email=email)
                             if existing.count() > 1:
-                                # Garder le premier, supprimer les autres
-                                to_keep = existing.first()
                                 for duplicate in existing[1:]:
                                     duplicate.delete()
                                 self.stdout.write(f'  🧹 Doublons supprimés pour {email}')
-                            
-                            # Vérifier si existe déjà
+
                             try:
                                 benevole = Benevole.objects.get(email=email)
-                                # EXISTE DÉJÀ : Ne mettre à jour QUE le statut
-                                # SAUF s'il est déjà "Mentor" (a un binôme actif)
+                                # EXISTE : mettre à jour uniquement le statut
                                 old_statut = benevole.statut
-                                
                                 if old_statut == 'Mentor':
-                                    # Garder le statut Mentor (ne pas écraser)
                                     updated_count += 1
                                     self.stdout.write(f'  ↻ Statut préservé : {prenom} {nom} (Mentor)')
                                 else:
-                                    # Mettre à jour vers Disponible
                                     benevole.statut = 'Disponible'
                                     benevole.save(update_fields=['statut'])
                                     updated_count += 1
@@ -154,97 +164,97 @@ class Command(BaseCommand):
                                         self.stdout.write(f'  🔄 Mis à jour statut : {prenom} {nom} ({old_statut} → Disponible)')
                                     else:
                                         self.stdout.write(f'  ↻ Statut inchangé : {prenom} {nom}')
-                                
+
                             except Benevole.DoesNotExist:
-                                # N'EXISTE PAS : Créer avec toutes les données du CSV
+                                # NOUVEAU : créer avec toutes les données
+                                commentaire_final_parts = [commentaires] if commentaires else []
+                                if texte_non_reconnu:
+                                    commentaire_final_parts.append(f'Matières (non classifié) : {texte_non_reconnu}')
+                                commentaire_final = '\n'.join(commentaire_final_parts).strip()
+
                                 benevole = Benevole.objects.create(
                                     email=email,
                                     nom=nom,
                                     prenom=prenom,
                                     telephone=telephone,
-                                    arrondissement=arrondissement,
+                                    code_postal=code_postal,
                                     adresse=adresse,
                                     profession=profession,
                                     primaire=primaire,
                                     college=college,
                                     lycee=lycee,
-                                    statut='Disponible',  # Provisoire
+                                    statut='Disponible',
                                     reunion_accueil_faite=reunion_accueil,
                                     volet_3_casier_judiciaire=volet_3,
                                     a_donne_photo=a_donne_photo,
-                                    commentaires=commentaires,
                                     divers=divers,
+                                    zone_geographique=','.join(arrondissements),  # ex: "1,5,6"
+                                    commentaires='\n'.join(filter(None, [commentaire_final, zone_commentaire])),
+                                    ville=ville,
                                 )
-                                
+
+                                if matieres_reconnues:
+                                    self.add_matieres(benevole, matieres_reconnues)
+
                                 created_count += 1
                                 self.stdout.write(f'  ✅ Créé : {prenom} {nom}')
-                    
+
                     except Exception as e:
                         error_count += 1
                         self.stdout.write(self.style.ERROR(f'  ❌ Erreur ligne {prenom} {nom}: {str(e)}'))
-        
+
         except FileNotFoundError:
             self.stdout.write(self.style.ERROR(f'❌ Fichier non trouvé : {benevoles_file}'))
             return
-        
+
         # ============================================================
         # IMPORT CANDIDATS À RECONTACTER (statut = Candidat)
         # ============================================================
-        
+
         tous_benevoles = list(Benevole.objects.all())
-        
         self.stdout.write(self.style.SUCCESS(f'\n📥 Import des candidats depuis {candidats_file}'))
-        
+
         try:
             with open(candidats_file, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 reader.fieldnames = [name.strip().lstrip('\ufeff').lstrip('\ufbff') for name in reader.fieldnames]
-                
+
                 for row in reader:
                     try:
-                        # Ignorer les lignes vides ou les séparateurs d'année
                         first_col_name = reader.fieldnames[0]
                         nom = row.get(first_col_name, '').strip().rstrip('*')
-                        
                         prenom = row.get('Prénom', '').strip()
                         email = row.get('Mail', '').strip().lower()
-                        
-                        # Arrêter si on atteint la section "Demandes retirées"
+
+                        # Arrêter à la section "Demandes retirées"
                         if 'demande' in nom.lower() and 'retir' in nom.lower():
                             break
 
                         if not nom or not prenom:
                             continue
 
-                        # Si la ligne contient juste une année (ex: "2023 - 2024"), ignorer
+                        # Ignorer les séparateurs d'année (ex: "2023 - 2024")
                         if '-' in nom and len(nom) < 15:
                             continue
 
-                        # Email invalide → on le vide plutôt que de rejeter la ligne
+                        # Email invalide → vider plutôt que rejeter la ligne
                         if email and '@' not in email and len(email) < 5:
                             email = ''
-                        
-                        # Extraire les données
+
                         telephone = row.get('Mobile', '').strip()
-                        arrondissement = row.get('Arr.', '').strip()
+                        code_postal = row.get('Arr.', '').strip()
                         adresse = row.get('Adresse', '').strip()
-                        zone_geo = row.get('Zone géographique', '').strip()
-                        
-                        # Niveaux
                         primaire = bool(row.get('Prim', '').strip() or row.get('C', '').strip())
                         college = bool(row.get('Coll', '').strip())
                         lycee = bool(row.get('Lycée', '').strip())
-                        
-                        # Commentaires
                         commentaires = row.get('Commentaires', '').strip()
                         infos_complementaires = row.get('Informations complémentaires', '').strip()
                         disponibilites = row.get('Disponibilités et compétences', '').strip()
-                        
-                        # Créer ou mettre à jour le candidat
-                        
-                        # Créer ou mettre à jour le candidat
+                        zone_geo_str = row.get('Zone géographique', '').strip()
+                        arrondissements, zone_commentaire = self.extraire_arrondissements(zone_geo_str)
+                        ville = row.get('Ville', '').strip() or self.get_ville_from_cp(code_postal)
 
-                        # Chercher par email si disponible, sinon par nom+prénom
+                        # Lookup : email en priorité, sinon nom+prénom normalisés
                         if email:
                             benevole = next(
                                 (b for b in tous_benevoles if b.email and b.email.lower() == email),
@@ -275,7 +285,7 @@ class Command(BaseCommand):
                                 old_statut = benevole.statut
                                 if old_statut in ('Mentor', 'Disponible'):
                                     updated_count += 1
-                                    self.stdout.write(f'  ↻ Statut préservé candidat : {prenom} {nom} (Mentor)')
+                                    self.stdout.write(f'  ↻ Statut préservé candidat : {prenom} {nom} ({old_statut})')
                                 else:
                                     benevole.statut = 'Candidat'
                                     benevole.save(update_fields=['statut'])
@@ -290,60 +300,113 @@ class Command(BaseCommand):
                                     nom=nom,
                                     prenom=prenom,
                                     telephone=telephone,
-                                    arrondissement=arrondissement,
+                                    code_postal=code_postal,
                                     adresse=adresse,
                                     primaire=primaire,
                                     college=college,
                                     lycee=lycee,
                                     statut='Candidat',
-                                    commentaires=commentaires,
                                     divers=f"{infos_complementaires}\n{disponibilites}".strip(),
+                                    zone_geographique=','.join(arrondissements),  # ex: "1,5,6"
+                                    commentaires='\n'.join(filter(None, [commentaires, zone_commentaire])),
+                                    ville=ville,
                                 )
                                 tous_benevoles.append(benevole)
                                 created_count += 1
                                 self.stdout.write(f'  ✅ Créé candidat : {prenom} {nom}')
-                    
+
                     except Exception as e:
                         error_count += 1
                         self.stdout.write(self.style.ERROR(f'  ❌ Erreur : {str(e)}'))
-        
+
         except FileNotFoundError:
             self.stdout.write(self.style.ERROR(f'❌ Fichier non trouvé : {candidats_file}'))
             return
-        
+
         # ============================================================
         # RÉSUMÉ
         # ============================================================
-        
+
         self.stdout.write(self.style.SUCCESS(f'\n✅ Import terminé !'))
         self.stdout.write(f'  📊 Créés : {created_count}')
         self.stdout.write(f'  🔄 Mis à jour : {updated_count}')
         if error_count > 0:
             self.stdout.write(self.style.WARNING(f'  ⚠️  Erreurs : {error_count}'))
-        
+
         if dry_run:
             self.stdout.write(self.style.WARNING('\n' + '='*60))
-            self.stdout.write(self.style.WARNING('⚠️  MODE TEST : Aucune donnée n\'a été modifiée'))
+            self.stdout.write(self.style.WARNING("⚠️  MODE TEST : Aucune donnée n'a été modifiée"))
             self.stdout.write(self.style.WARNING('='*60 + '\n'))
         else:
             self.stdout.write(self.style.SUCCESS(
-                f'\n💡 Note : Les statuts "Mentor" seront attribués lors de l\'import des binômes'
+                '\n💡 Note : Les statuts "Mentor" seront attribués lors de l\'import des binômes'
             ))
-    
+
     def parse_date(self, date_str):
         """Parse une date au format DD/MM/YYYY ou DD/MM/YY"""
         if not date_str or date_str.strip() == '0':
             return None
-        
         date_str = date_str.strip()
-        
-        # Essayer différents formats
-        formats = ['%d/%m/%Y', '%d/%m/%y', '%Y-%m-%d']
-        
-        for fmt in formats:
+        for fmt in ['%d/%m/%Y', '%d/%m/%y', '%Y-%m-%d']:
             try:
                 return datetime.strptime(date_str, fmt).date()
             except ValueError:
                 continue
-        
         return None
+
+    def add_matieres(self, benevole, matieres_list):
+        """Ajoute les matières canoniques reconnues au bénévole (ManyToMany)."""
+        for nom_matiere in matieres_list:
+            matiere, _ = Matiere.objects.get_or_create(
+                nom__iexact=nom_matiere,
+                defaults={'nom': nom_matiere, 'actif': True}
+            )
+            benevole.matieres.add(matiere)
+
+    def get_ville_from_cp(self, code_postal):
+        """Résout la ville depuis le code postal via geo.api.gouv.fr"""
+        if not code_postal:
+            return ''
+        # Marseille : 13001 à 13016
+        if code_postal.startswith('130') and len(code_postal) == 5:
+            return 'Marseille'
+        try:
+            import urllib.request, json
+            url = f'https://geo.api.gouv.fr/communes?codePostal={code_postal}&fields=nom&format=json'
+            with urllib.request.urlopen(url, timeout=3) as r:
+                data = json.loads(r.read())
+                if data:
+                    return data[0]['nom']
+        except Exception:
+            pass
+        return ''
+    
+    def extraire_arrondissements(self, zone_geo_str):
+        """
+        Extrait les arrondissements marseillais depuis le texte libre.
+        Retourne (liste_arrondissements, texte_original_si_non_reconnu)
+        """
+        if not zone_geo_str:
+            return [], ''
+        
+        import re
+        arrondissements = set()
+        
+        # Chercher patterns : 13001-13016, 1er, 2e, 2ème, 15°...
+        patterns = [
+            r'130(\d{2})',                          # 13001 → 13016
+            r'(?<!\d)(\d{1,2})\s*°',               # 6°, 8°, 13°
+            r'(?<!\d)(\d{1,2})\s*[eè][èéme]*(?!\w)', # 6e, 8ème, 3ème, 1er
+            r'(?<!\d)(\d{1,2})\s*(?:arr|ardt)\b',  # 12 arr, 5 ardt
+        ]       
+        
+        for pattern in patterns:
+            for match in re.finditer(pattern, zone_geo_str, re.IGNORECASE):
+                n = int(match.group(1))
+                if 1 <= n <= 16:
+                    arrondissements.add(str(n))
+        
+        if arrondissements:
+            return sorted(arrondissements, key=int), ''
+        else:
+            return [], zone_geo_str

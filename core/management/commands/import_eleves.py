@@ -7,111 +7,9 @@ Usage:
 
 from django.core.management.base import BaseCommand
 from core.models import Eleve, Matiere
+from core.utils_matieres import extraire_matieres
 import csv
 from datetime import datetime
-
-
-# Matières canoniques et leurs mots-clés associés
-MATIERES_CANONIQUES = {
-    'Mathématiques': ['math', 'maths', 'mathématiques', 'calcul', 'géométrie', 'nombres'],
-    'Français':      ['français', 'francais', 'lecture', 'écriture', 'ecriture', 'orthographe',
-                      'grammaire', 'conjugaison', 'rédaction', 'redaction', 'compréhension',
-                      'comprehension', 'consignes','conjugaison', 'conjuguaison', 'fraçais', 'matières scientifiques', 'sciences'],
-    'Anglais':       ['anglais'],
-    'Espagnol':      ['espagnol'],
-    'Histoire-Géographie': ['histoire', 'géographie', 'geographie', 'hg', 'hist', 'his-geo'],
-    'SVT':           ['svt', 'sciences', 'matières scientifiques'],
-    'Physique-Chimie': ['physique', 'chimie', 'phys', 'matières scientifiques', 'sciences'],
-    'Toutes matières': ['toutes', 'toutes matières', 'toutes matieres', 'primaire',
-                        'matières primaires', 'bases du primaire'],
-    'Méthodologie':  ['méthodo', 'methodologie', 'méthodologie', 'organisation', 'méthode',
-                      'apprendre à apprendre'],
-}
-
-
-def normaliser(texte):
-    """Minuscules + suppression accents pour comparaison."""
-    import unicodedata
-    texte = texte.lower().strip()
-    texte = unicodedata.normalize('NFD', texte)
-    texte = ''.join(c for c in texte if unicodedata.category(c) != 'Mn')
-    return texte
-
-
-# Mapping pour normaliser les classes du CSV vers les choix du modèle.
-# Toutes les clés sont en MAJUSCULES — la fonction fait un .upper() avant lookup.
-CLASSE_MAPPING = {
-    # Collège — variantes orthographiques
-    '6°': '6e',  '6ÈME': '6e', '6EME': '6e',
-    '5°': '5e',  '5ÈME': '5e', '5EME': '5e',
-    '4°': '4e',  '4ÈME': '4e', '4EME': '4e',
-    '3°': '3e',  '3ÈME': '3e', '3EME': '3e',
-    # Collège — sections (6A … 6E, etc.)
-    '6A': '6e', '6B': '6e', '6C': '6e', '6D': '6e', '6E': '6e',
-    '5A': '5e', '5B': '5e', '5C': '5e', '5D': '5e', '5E': '5e',
-    '4A': '4e', '4B': '4e', '4C': '4e', '4D': '4e', '4E': '4e',
-    '3A': '3e', '3B': '3e', '3C': '3e', '3D': '3e', '3E': '3e',
-    # Lycée général
-    '2NDE': '2de', '2DE': '2de', '2°': '2de', 'SECONDE': '2de',
-    '1ÈRE': '1re', '1ERE': '1re', '1RE': '1re', '1°': '1re', 'PREMIERE': '1re',
-    # Terminale
-    'T': 'Terminale', 'TLE': 'Terminale', 'TERM': 'Terminale', 'TERMINALE': 'Terminale',
-    'TS': 'Terminale', 'TES': 'Terminale', 'TL': 'Terminale',
-    # CAP
-    'CAP 1': 'CAP 1e', 'CAP1': 'CAP 1e',
-    'CAP 2': 'CAP 2e', 'CAP2': 'CAP 2e',
-    # Bac Pro
-    '2DE BAC PRO': 'Bac Pro 2e', '2NDE BAC PRO': 'Bac Pro 2e',
-    'SECONDE BAC PRO': 'Bac Pro 2e', '2DE BACPRO': 'Bac Pro 2e',
-    'BAC PRO 2E': 'Bac Pro 2e', 'BAC PRO 2': 'Bac Pro 2e',
-}
-
-CLASSES_VALIDES = {c for c, _ in Eleve.CLASSE_CHOICES}
-
-
-def normaliser_classe(classe_str):
-    """Normalise la valeur de classe CSV vers un choix du modèle, ou '' si inconnu."""
-    if not classe_str:
-        return ''
-    classe_str = classe_str.strip()
-    if classe_str in CLASSES_VALIDES:
-        return classe_str
-    return CLASSE_MAPPING.get(classe_str.upper(), '')
-
-
-def extraire_matieres(besoins_str):
-    """
-    Retourne (matieres_reconnues: list[str], texte_non_reconnu: str)
-    """
-    if not besoins_str:
-        return [], ''
-
-    # Découper par séparateurs courants
-    import re
-    tokens = re.split(r'[,;/\n]+', besoins_str)
-    tokens = [t.strip() for t in tokens if t.strip()]
-
-    matieres_trouvees = set()
-    tokens_non_reconnus = []
-
-    for token in tokens:
-        token_norm = normaliser(token)
-        reconnu = False
-
-        for matiere_canon, mots_cles in MATIERES_CANONIQUES.items():
-            for mot in mots_cles:
-                if normaliser(mot) in token_norm:
-                    matieres_trouvees.add(matiere_canon)
-                    reconnu = True
-                    break
-            if reconnu:
-                break
-
-        if not reconnu:
-            tokens_non_reconnus.append(token)
-
-    texte_non_reconnu = ', '.join(tokens_non_reconnus)
-    return list(matieres_trouvees), texte_non_reconnu
 
 
 class Command(BaseCommand):
@@ -155,10 +53,10 @@ class Command(BaseCommand):
                         if not nom_famille or not prenom_enfant:
                             continue
 
-                        arrondissement = row.get('Arr.', '').strip()
+                        code_postal = row.get('Arr.', '').strip()
                         adresse = row.get('Adresse enfant', '').strip()
                         complement_adresse = row.get("complement d'adresse", '').strip()
-                        classe = normaliser_classe(row.get('yion', '').strip())
+                        classe = row.get('yion', '').strip()
                         etablissement = row.get('Etablissement scolaire', '').strip()
                         email_parent = row.get('mail', '').strip().lower()
                         besoins = row.get('besoins', '').strip()
@@ -229,7 +127,7 @@ class Command(BaseCommand):
                                     nom=nom_famille,
                                     prenom=prenom_enfant,
                                     telephone_parent=telephone_famille,
-                                    arrondissement=arrondissement,
+                                    code_postal=code_postal,
                                     adresse=adresse,
                                     complement_adresse=complement_adresse,
                                     classe=classe,
@@ -239,12 +137,13 @@ class Command(BaseCommand):
                                     statut_saisie='complet',
                                     informations_complementaires=commentaire_final,
                                     date_derniere_visite=date_visite,
+                                    ville=self.get_ville_from_cp(code_postal),
                                 )
 
                                 created_count += 1
                                 self.stdout.write(f'  ✅ Créé : {prenom_enfant} {nom_famille}')
 
-                            # Ajouter les matières reconnues (M2M)
+                            # Ajouter les matières reconnues (M2M) — création uniquement
                             if matieres_reconnues:
                                 self.add_matieres(eleve, matieres_reconnues)
 
@@ -288,3 +187,21 @@ class Command(BaseCommand):
                 defaults={'nom': nom_matiere, 'actif': True}
             )
             eleve.matieres_souhaitees.add(matiere)
+    
+    def get_ville_from_cp(self, code_postal):
+        """Résout la ville depuis le code postal via geo.api.gouv.fr"""
+        if not code_postal:
+            return ''
+        # Marseille : 13001 à 13016
+        if code_postal.startswith('130') and len(code_postal) == 5:
+            return 'Marseille'
+        try:
+            import urllib.request, json
+            url = f'https://geo.api.gouv.fr/communes?codePostal={code_postal}&fields=nom&format=json'
+            with urllib.request.urlopen(url, timeout=3) as r:
+                data = json.loads(r.read())
+                if data:
+                    return data[0]['nom']
+        except Exception:
+            pass
+        return ''

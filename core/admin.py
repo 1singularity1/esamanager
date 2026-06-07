@@ -280,7 +280,7 @@ class EleveAdmin(GeolocalisationMixin, admin.ModelAdmin):
     # 📝 FORMULAIRE D'ÉDITION
     # ========================================================================
     
-    readonly_fields = ['date_creation', 'date_modification', 'est_geolocalisé','statut_saisie','bouton_geolocalisation','code_postal','arrondissement','latitude','longitude']
+    readonly_fields = ['date_creation', 'date_modification', 'est_geolocalisé','statut_saisie','bouton_geolocalisation','code_postal','latitude','longitude']
     
     fieldsets = (
         ('👤 Elève', {

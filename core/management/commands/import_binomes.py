@@ -166,6 +166,8 @@ class Command(BaseCommand):
                                 if coresponsable_user:
                                     eleve.co_responsable = coresponsable_user
                                     eleve.save(update_fields=['co_responsable'])
+                                    benevole.co_responsable = coresponsable_user
+                                    benevole.save(update_fields=['co_responsable'])
 
                                 if benevole.statut != 'Mentor':
                                     benevole.statut = 'Mentor'

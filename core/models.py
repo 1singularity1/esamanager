@@ -204,20 +204,6 @@ class Eleve(models.Model):
         help_text="Ex: Rue de la République, Avenue du Prado"
     )
 
-    code_postal = models.CharField(
-        max_length=10,
-        blank=True,
-        verbose_name="Code postal",
-        help_text="Ex: 13001, 13008"
-    )
-    
-    arrondissement = models.CharField(
-        max_length=10,
-        blank=True,
-        verbose_name="Arrondissement",
-        help_text="Ex: 1er, 2e, 3e, etc."
-    )
-    
     latitude = models.FloatField(
         null=True,
         blank=True,
@@ -423,13 +409,6 @@ class Benevole(models.Model):
         blank=True,
         verbose_name="Code postal",
         help_text="Exemple : 13001, 13190"
-    )
-    
-    arrondissement = models.CharField(
-        max_length=10,
-        blank=True,
-        verbose_name="Arrondissement",
-        help_text="Ex: 1er, 2e, 3e, etc."
     )
     
     ville = models.CharField(

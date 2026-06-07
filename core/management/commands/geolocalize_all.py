@@ -167,12 +167,12 @@ class Command(BaseCommand):
             return
         
         self.stdout.write(f'[{index}/{total}] 🔍 {nom_complet}')
-        self.stdout.write(f'       {benevole.adresse}, {benevole.code_postal or benevole.arrondissement}')
+        self.stdout.write(f'       {benevole.adresse}, {benevole.code_postal}')
         
         # Géolocaliser
         result = self.geocode_address(
             address=benevole.adresse,
-            postal_code=benevole.code_postal or benevole.arrondissement,
+            postal_code=benevole.code_postal,
             city='Marseille'
         )
         
@@ -196,8 +196,7 @@ class Command(BaseCommand):
                 'nom': benevole.nom,
                 'prenom': benevole.prenom,
                 'adresse': benevole.adresse,
-                'code_postal': benevole.code_postal or benevole.arrondissement,
-                'arrondissement': benevole.arrondissement,
+                'code_postal': benevole.code_postal,
                 'suggestion': self.suggest_correction(benevole.adresse)
             })
 
@@ -220,12 +219,12 @@ class Command(BaseCommand):
             return
         
         self.stdout.write(f'[{index}/{total}] 🔍 {nom_complet}')
-        self.stdout.write(f'       {eleve.adresse}, {eleve.code_postal or eleve.arrondissement}')
+        self.stdout.write(f'       {eleve.adresse}, {eleve.code_postal}')
         
         # Géolocaliser
         result = self.geocode_address(
             address=eleve.adresse,
-            postal_code=eleve.code_postal or eleve.arrondissement,
+            postal_code=eleve.code_postal,
             city='Marseille'
         )
         
@@ -249,8 +248,7 @@ class Command(BaseCommand):
                 'nom': eleve.nom,
                 'prenom': eleve.prenom,
                 'adresse': eleve.adresse,
-                'code_postal': eleve.code_postal or eleve.arrondissement,
-                'arrondissement': eleve.arrondissement,
+                'code_postal': eleve.code_postal,
                 'suggestion': self.suggest_correction(eleve.adresse)
             })
 
@@ -407,8 +405,7 @@ class Command(BaseCommand):
         self.stdout.write(f'\n📄 Génération du rapport : {filename}')
         
         with open(filename, 'w', encoding='utf-8', newline='') as f:
-            fieldnames = ['type', 'nom', 'prenom', 'adresse', 'code_postal', 
-                         'arrondissement', 'suggestion', 'adresse_corrigee']
+            fieldnames = ['type', 'nom', 'prenom', 'adresse', 'code_postal', 'suggestion', 'adresse_corrigee']
             
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
