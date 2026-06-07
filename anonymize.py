@@ -35,8 +35,8 @@ for b in Benevole.objects.all():
     b.profession = "Profession test"
     b.disponibilites_competences = ""
     b.informations_complementaires = ""
-    b.latitude = random_lat()
-    b.longitude = random_lon()
+    # b.latitude = random_lat()
+    # b.longitude = random_lon()
     b.save()
 
 # Anonymiser les élèves
@@ -52,8 +52,8 @@ for e in Eleve.objects.all():
     e.numero_rue = str(e.id)
     e.ville = "Marseille"
     e.complement_adresse = ""
-    e.latitude = random_lat()
-    e.longitude = random_lon()
+    # e.latitude = random_lat()
+    # e.longitude = random_lon()
     e.save()
 
 # Anonymiser les utilisateurs
