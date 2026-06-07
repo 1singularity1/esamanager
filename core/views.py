@@ -88,36 +88,6 @@ def carte_enattente(request):
 def api_binomes_json(request):
     """
     API JSON qui retourne tous les binômes actifs pour la carte.
-    Format de retour :
-    {
-        "binomes": [
-            {
-                "id": 1,
-                "eleve": {
-                    "id": 5,
-                    "nom": "Dupont",
-                    "prenom": "Jean",
-                    "classe": "CE2",
-                    "latitude": 43.2965,
-                    "longitude": 5.3698
-                },
-                "benevole": {
-                    "id": 12,
-                    "nom": "Martin",
-                    "prenom": "Sophie",
-                    "code_postal": "13008",
-                    "statut": "Mentor",
-                    "profession": "Ingénieur",
-                    "latitude": 43.2617,
-                    "longitude": 5.3792
-                },
-                "date_debut": "2024-09-01",
-                "actif": true
-            },
-            ...
-        ],
-        "count": 75
-    }
     """
     # Récupérer les binômes actifs avec les relations
     binomes = Binome.objects.filter(actif=True).select_related('eleve', 'benevole')
@@ -127,35 +97,39 @@ def api_binomes_json(request):
         # Vérifier que l'élève et le bénévole ont des coordonnées
         if binome.eleve.latitude and binome.eleve.longitude and \
            binome.benevole.latitude and binome.benevole.longitude:
-            
+
+            referent_eleve = User.objects.filter(id=binome.eleve.co_responsable_id).first()
+            referent_benevole = User.objects.filter(id=binome.benevole.co_responsable_id).first()
+
             data.append({
                 'id': binome.id,
                 'eleve': {
                     'id': binome.eleve.id,
                     'nom': binome.eleve.nom,
                     'prenom': binome.eleve.prenom,
-                    'arrondissement': binome.eleve.code_postal,  # Utiliser arrondissement directement
+                    'arrondissement': binome.eleve.code_postal,
                     'code_postal': binome.eleve.code_postal,
                     'adresse': binome.eleve.adresse,
                     'ville': binome.eleve.ville,
                     'classe': binome.eleve.classe,
-                    'latitude': float(binome.eleve.latitude),  # Convertir en float
-                    'longitude': float(binome.eleve.longitude),  # Convertir en float
-                   'referent': User.objects.filter(id=binome.eleve.co_responsable_id).first().get_full_name() if binome.eleve.co_responsable_id else None,},
+                    'latitude': float(binome.eleve.latitude),
+                    'longitude': float(binome.eleve.longitude),
+                    'referent': referent_eleve.get_full_name() if referent_eleve else None,
+                },
                 'benevole': {
                     'id': binome.benevole.id,
                     'nom': binome.benevole.nom,
                     'prenom': binome.benevole.prenom,
-                    'code_postal': binome.benevole.code_postal,  # ✅ AJOUTER code_postal
-                    'arrondissement': binome.benevole.code_postal,  # Pour compatibilité
-                    'statut': binome.benevole.statut,  # ✅ AJOUTER statut
-                    'profession': binome.benevole.profession or '',  # ✅ AJOUTER profession
+                    'code_postal': binome.benevole.code_postal,
+                    'arrondissement': binome.benevole.code_postal,
+                    'statut': binome.benevole.statut,
+                    'profession': binome.benevole.profession or '',
                     'adresse': binome.benevole.adresse,
                     'telephone': binome.benevole.telephone,
                     'ville': binome.benevole.ville,
-                    'latitude': float(binome.benevole.latitude),  # Convertir en float
-                    'longitude': float(binome.benevole.longitude),  # Convertir en float
-                    'referent': User.objects.filter(id=binome.benevole.co_responsable_id).first().get_full_name() if binome.benevole.co_responsable_id else None,
+                    'latitude': float(binome.benevole.latitude),
+                    'longitude': float(binome.benevole.longitude),
+                    'referent': referent_benevole.get_full_name() if referent_benevole else None,
                 },
                 'date_debut': binome.date_debut.isoformat() if binome.date_debut else None,
                 'actif': binome.actif,
@@ -169,7 +143,7 @@ def api_eleves_json(request):
     eleves = Eleve.objects.filter(
         latitude__isnull=False,
         longitude__isnull=False,
-        statut='en_attente'  # Filtrer uniquement les élèves en attente d'accompagnement
+        statut='en_attente'
     )
     
     data = []
@@ -198,7 +172,7 @@ def api_benevoles_json(request):
     benevoles = Benevole.objects.filter(
         latitude__isnull=False,
         longitude__isnull=False,
-        statut='Candidat'  # Filtrer uniquement les bénévoles candidats
+        statut='Candidat'
     )
     
     data = []
@@ -214,7 +188,7 @@ def api_benevoles_json(request):
             'ville': benevole.ville,
             'telephone': benevole.telephone,
             'matieres': list(benevole.matieres.values_list('nom', flat=True)),
-            'arrondissement': benevole.arrondissement,
+            'arrondissement': benevole.code_postal,
         })
     
     return JsonResponse(data, safe=False)
@@ -279,13 +253,11 @@ def autosave_eleve(request):
         data = json.loads(request.body)
         eleve_id = data.get('id')
         
-        # Si pas d'ID, créer un nouvel élève
         if eleve_id:
             eleve = Eleve.objects.get(id=eleve_id)
         else:
             eleve = Eleve()
         
-        # Mettre à jour les champs (sans validation stricte)
         eleve.nom = data.get('nom', '')
         eleve.prenom = data.get('prenom', '')
         eleve.telephone = data.get('telephone', '')
@@ -302,7 +274,6 @@ def autosave_eleve(request):
         eleve.statut = data.get('statut', 'a_accompagner')
         eleve.informations_complementaires = data.get('informations_complementaires', '')
         
-        # Coordonnées GPS
         latitude = data.get('latitude')
         longitude = data.get('longitude')
         if latitude:
@@ -316,10 +287,7 @@ def autosave_eleve(request):
             except (ValueError, TypeError):
                 pass
         
-        # IMPORTANT : Marquer comme brouillon
         eleve.statut_saisie = 'brouillon'
-        
-        # Sauvegarder sans validation stricte
         eleve.save()
         
         return JsonResponse({
@@ -346,7 +314,6 @@ def autosave_eleve(request):
 def validate_eleve(request):
     """
     Marque un élève comme complet (validé).
-    Appelée quand l'utilisateur clique sur "Enregistrer".
     """
     try:
         data = json.loads(request.body)
