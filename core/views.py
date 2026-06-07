@@ -133,7 +133,7 @@ def api_binomes_json(request):
                     'id': binome.eleve.id,
                     'nom': binome.eleve.nom,
                     'prenom': binome.eleve.prenom,
-                    'arrondissement': binome.eleve.arrondissement,  # Utiliser arrondissement directement
+                    'arrondissement': binome.eleve.code_postal,  # Utiliser arrondissement directement
                     'code_postal': binome.eleve.code_postal,
                     'adresse': binome.eleve.adresse,
                     'ville': binome.eleve.ville,
@@ -147,7 +147,7 @@ def api_binomes_json(request):
                     'nom': binome.benevole.nom,
                     'prenom': binome.benevole.prenom,
                     'code_postal': binome.benevole.code_postal,  # ✅ AJOUTER code_postal
-                    'arrondissement': binome.benevole.arrondissement,  # Pour compatibilité
+                    'arrondissement': binome.benevole.code_postal,  # Pour compatibilité
                     'statut': binome.benevole.statut,  # ✅ AJOUTER statut
                     'profession': binome.benevole.profession or '',  # ✅ AJOUTER profession
                     'adresse': binome.benevole.adresse,
@@ -186,7 +186,7 @@ def api_eleves_json(request):
             'ville': eleve.ville,
             'telephone': eleve.telephone,
             'matieres_souhaitees': list(eleve.matieres_souhaitees.values_list('nom', flat=True)),
-            'arrondissement': eleve.arrondissement,
+            'arrondissement': eleve.code_postal,
             'statut': eleve.statut,
         })
     
