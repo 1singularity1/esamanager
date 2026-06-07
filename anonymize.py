@@ -15,6 +15,12 @@ def random_string(n=8):
 def random_phone():
     return f"06{''.join(random.choices(string.digits, k=8))}"
 
+def random_lat():
+    return float(f"{random.uniform(43.25, 43.35):.6f}")
+
+def random_lon():
+    return float(f"{random.uniform(5.33, 5.45):.6f}")
+
 # Anonymiser les bénévoles
 for b in Benevole.objects.all():
     b.nom = f"Nom_{b.id}"
@@ -29,8 +35,8 @@ for b in Benevole.objects.all():
     b.profession = "Profession test"
     b.disponibilites_competences = ""
     b.informations_complementaires = ""
-    b.latitude = None
-    b.longitude = None
+    b.latitude = random_lat()
+    b.longitude = random_lon()
     b.save()
 
 # Anonymiser les élèves
@@ -46,8 +52,8 @@ for e in Eleve.objects.all():
     e.numero_rue = str(e.id)
     e.ville = "Marseille"
     e.complement_adresse = ""
-    e.latitude = None
-    e.longitude = None
+    e.latitude = random_lat()
+    e.longitude = random_lon()
     e.save()
 
 # Anonymiser les utilisateurs
