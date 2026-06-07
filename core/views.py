@@ -10,6 +10,7 @@ from .models import Eleve, Benevole, Binome
 from allauth.mfa.models import Authenticator
 from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth.decorators import login_not_required
+from django.contrib.auth.models import User
 import json
 
 
@@ -140,7 +141,7 @@ def api_binomes_json(request):
                     'classe': binome.eleve.classe,
                     'latitude': float(binome.eleve.latitude),  # Convertir en float
                     'longitude': float(binome.eleve.longitude),  # Convertir en float
-                    'referent': binome.eleve.co_responsable.get_full_name() if binome.eleve.co_responsable_id and hasattr(binome.eleve, 'co_responsable') else None,                },
+                   'referent': User.objects.filter(id=binome.eleve.co_responsable_id).first().get_full_name() if binome.eleve.co_responsable_id else None,},
                 'benevole': {
                     'id': binome.benevole.id,
                     'nom': binome.benevole.nom,
@@ -154,7 +155,7 @@ def api_binomes_json(request):
                     'ville': binome.benevole.ville,
                     'latitude': float(binome.benevole.latitude),  # Convertir en float
                     'longitude': float(binome.benevole.longitude),  # Convertir en float
-                    'referent': binome.benevole.co_responsable.get_full_name() if binome.benevole.co_responsable_id and hasattr(binome.benevole, 'co_responsable') else None,
+                    'referent': User.objects.filter(id=binome.benevole.co_responsable_id).first().get_full_name() if binome.benevole.co_responsable_id else None,
                 },
                 'date_debut': binome.date_debut.isoformat() if binome.date_debut else None,
                 'actif': binome.actif,
