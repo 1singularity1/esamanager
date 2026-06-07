@@ -170,3 +170,7 @@ test_import_esa/benevoles.csv
 test_import_esa/binomes_gilbert.csv
 test_import_esa/binomes_david.csv
 test_import_esa/binomes_georges.csv
+backup.json
+backup.sql
+echecs.csv
+structure.sql
