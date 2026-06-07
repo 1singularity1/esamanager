@@ -5,11 +5,6 @@ from django.contrib.auth.models import User
 
 EMAILS_AUTORISES = [
     'david.delannoy@gmail.com',
-    'bernadettefortain2023@gmail.com',
-    'clara.jonas@hotmail.fr',
-    'g.tchorbadjian@gmail.com',
-    'batac.gilbert@orange.fr',
-    'sylviehue1954@gmail.com',
 ]
 
 class ESAAccountAdapter(DefaultSocialAccountAdapter):
