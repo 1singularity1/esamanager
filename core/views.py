@@ -140,8 +140,7 @@ def api_binomes_json(request):
                     'classe': binome.eleve.classe,
                     'latitude': float(binome.eleve.latitude),  # Convertir en float
                     'longitude': float(binome.eleve.longitude),  # Convertir en float
-                    'referent': binome.eleve.co_responsable.get_full_name() if binome.eleve.co_responsable else None,
-                },
+                    'referent': binome.eleve.co_responsable.get_full_name() if binome.eleve.co_responsable_id and hasattr(binome.eleve, 'co_responsable') else None,                },
                 'benevole': {
                     'id': binome.benevole.id,
                     'nom': binome.benevole.nom,
@@ -155,7 +154,7 @@ def api_binomes_json(request):
                     'ville': binome.benevole.ville,
                     'latitude': float(binome.benevole.latitude),  # Convertir en float
                     'longitude': float(binome.benevole.longitude),  # Convertir en float
-                    'referent': binome.benevole.co_responsable.get_full_name() if binome.benevole.co_responsable else None,
+                    'referent': binome.benevole.co_responsable.get_full_name() if binome.benevole.co_responsable_id and hasattr(binome.benevole, 'co_responsable') else None,
                 },
                 'date_debut': binome.date_debut.isoformat() if binome.date_debut else None,
                 'actif': binome.actif,
