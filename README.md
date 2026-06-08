@@ -2,7 +2,7 @@
 
 Application web Django de gestion des binômes de tutorat/mentorat pour l'antenne marseillaise de l'association ESA (Étudiants et Salarié(es)/Retraité(es) Accompagnant(es)).
 
-**Version :** Beta 0.2.0 — voir [CHANGELOG.md](CHANGELOG.md)
+**Version :** Beta 0.3.0 — voir [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
@@ -110,19 +110,6 @@ sudo tail -f /var/log/nginx/error.log
 
 ---
 
-## Co-responsables
-
-| Nom | Onglet binômes |
-|---|---|
-| David Delannoy | binomes_david.csv |
-| Clara Jonas | binomes_clara.csv |
-| Georges Tchorbadjian | binomes_georges.csv |
-| Bernadette Fortain | binomes_bernadette.csv |
-| Gilbert Batac | binomes_gilbert.csv |
-| Sylvie Hue | binomes_sylvie.csv |
-
----
-
 ## Auteur
 
-David Delannoy — Co-responsable technique ESA Marseille
+David Delannoy
