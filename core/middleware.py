@@ -10,10 +10,10 @@ URLS_PUBLIQUES = [
 ]
 
 # Emails exemptés de la 2FA
-EMAILS_SANS_MFA = ['esadmintest@gmail.com']
-EMAILS_SANS_MFA = ['singulier84@gmail.com']
-EMAILS_SANS_MFA = ['adupuy.sillynius@gmail.com']
-EMAILS_SANS_MFA = ['david.delannoy@gmail.com']
+EMAILS_SANS_MFA = ['esadmintest@gmail.com',
+                   'singulier84@gmail.com',
+                   'adupuy.sillynius@gmail.com',
+                   'david.delannoy@gmail.com']
 
 class LoginRequiredMiddleware:
     def __init__(self, get_response):
