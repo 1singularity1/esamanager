@@ -13,6 +13,7 @@ URLS_PUBLIQUES = [
 EMAILS_SANS_MFA = ['esadmintest@gmail.com']
 EMAILS_SANS_MFA = ['singulier84@gmail.com']
 EMAILS_SANS_MFA = ['adupuy.sillynius@gmail.com']
+EMAILS_SANS_MFA = ['david.delannoy@gmail.com']
 
 class LoginRequiredMiddleware:
     def __init__(self, get_response):
